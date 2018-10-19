@@ -1,0 +1,11 @@
+Method - sum((X - XC)^2) - sum(C^2)
+
+YaleB Extended
+10 subjects - 640 images
+lambda = 0.05*
+-------------
+Python - 101714 - 68307
+CVX - 53 - 725
+ADMM - 318 - 327 (0, false, 20, true, 1, 2e-4, 150)
+> ADMM - 47 - 828 (0, false, 66.666, true, 1, 2e-4, 150)
+ADMM - 30 - 727 (0, false, 250, false, 1, 2e-4, 150)

@@ -1,0 +1,10 @@
+.ipynb_checkpoints
+__pycache__
+cvxpy.egg-info
+~$*
+
+# ADMM implementation of SSC in Matlab
+SSC_ADMM_v1.1/*
+!/SSC_ADMM_v1.1/SSC_modified.m
+!/SSC_ADMM_v1.1/SSC_custom.m
+!/SSC_ADMM_v1.1/performance.txt
