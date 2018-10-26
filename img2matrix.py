@@ -36,14 +36,13 @@ def single_img2dsift(pgm_dir):
     return np.concatenate(((image/255).flatten(), feaArr))
 
 
-def batch_convert_YaleB(truncate_num=30, images_per_person=None):
+def batch_convert_YaleB(img_path, truncate_num=30, images_per_person=None):
     img_suffix = 'pgm'
     mat = []
     label = []
-    img_path = './CroppedYale'
     path_dir = os.listdir(img_path)
     # Create data matrix
-    cats = 0
+    subjects = 0
     for all_dir in path_dir:
         i = int(re.sub("\D", "", all_dir))
         file_names = os.listdir(os.path.join(img_path, all_dir))
@@ -58,8 +57,8 @@ def batch_convert_YaleB(truncate_num=30, images_per_person=None):
                 imgs += 1
                 if(imgs == images_per_person):
                     break
-        cats += 1
-        if(cats == truncate_num):
+        subjects += 1
+        if(subjects == truncate_num):
             break
 
         #mat.append(mat_i)

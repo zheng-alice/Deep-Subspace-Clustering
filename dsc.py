@@ -1,5 +1,3 @@
-from sp import getSparcityPrior
-from sp_blitzl1 import sparseCoefRecovery
 from supporting_files.sda import StackedDenoisingAutoencoder
 import tensorflow as tf
 import numpy as np
@@ -10,7 +8,7 @@ class DeepSubspaceClustering:
 
     def __init__(self, inputX, C=None, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
                  weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
-                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100]):
+                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100]):
 
         self.noise = noise
         n_sample, n_feat = inputX.shape
@@ -26,11 +24,7 @@ class DeepSubspaceClustering:
         # This is not the symbolic variable of tensorflow, this is real!
         self.inputX = inputX
 
-        if C is None:
-            # Transpose the matrix first, and get the whole matrix of C
-            self.inputC = sparseCoefRecovery(inputX.T)
-        else:
-            self.inputC = C
+        self.inputC = C
 
         self.C = tf.placeholder(dtype=tf.float32, shape=[None, None], name='C')
 
@@ -41,7 +35,7 @@ class DeepSubspaceClustering:
         weights, biases = self.init_layer_weight(weight_init, hidden_dims, [weight_init_params[0]]*len(hidden_dims),
                                                  [activation]*len(hidden_dims), lr=weight_init_params[1],
                                                  batch_size=weight_init_params[2], sda_optimizer=sda_optimizer,
-                                                 sda_decay=sda_decay)
+                                                 sda_decay=sda_decay, sda_printstep=weight_init_params[3])
 
         # J3 regularization term
         J3_list = []
@@ -71,14 +65,14 @@ class DeepSubspaceClustering:
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
         self.optimizer = optimize(self.cost, learning_rate, optimizer, decay, self.global_step)
 
-    def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none'):
+    def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none' sda_printstep=100):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, 10, 'uniform', sda_optimizer, sda_decay)
+            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, 10, 'default', sda_optimizer, sda_decay)
+            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':

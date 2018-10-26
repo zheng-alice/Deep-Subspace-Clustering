@@ -10,30 +10,34 @@
 % Copyright @ Ehsan Elhamifar, 2012
 %--------------------------------------------------------------------------
 
-function [grps,C] = SSC_modified(X,k,r,affine,alpha,outlier,rho,thr,maxIter)
+function [grps] = SSC_modified(k,r,affine,alpha,outlier,rho,thr,maxIter)
 
-if (nargin < 9)
+if (nargin < 8)
     maxIter = 150;
 end
-if (nargin < 8)
+if (nargin < 7)
     thr = 2*10^-4;
 end
-if (nargin < 7)
+if (nargin < 6)
     rho = 1;
 end
-if (nargin < 6)
+if (nargin < 5)
     outlier = true;
 end
-if (nargin < 5)
+if (nargin < 4)
     alpha = 20;
 end
-if (nargin < 4)
+if (nargin < 3)
     affine = false;
 end
-if (nargin < 3)
+if (nargin < 2)
     r = 0;
 end
 
+%still the fastest way to pass large ndarrays
+%the alternative takes 37 seconds per (2350x300) array
+load ./../temp.mat X;
+X = double(X.');
 Xp = DataProjection(X,r);
 
 if (~outlier)
@@ -47,3 +51,5 @@ end
 
 CKSym = BuildAdjacency(thrC(C,rho));
 grps = SpectralClustering(CKSym,k);
+
+save ./../temp.mat C
