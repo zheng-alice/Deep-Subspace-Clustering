@@ -65,7 +65,7 @@ class DeepSubspaceClustering:
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
         self.optimizer = optimize(self.cost, learning_rate, optimizer, decay, self.global_step)
 
-    def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none' sda_printstep=100):
+    def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
         weights, biases = [], []
         if name == 'sda-uniform':
             sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay)
