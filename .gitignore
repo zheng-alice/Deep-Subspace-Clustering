@@ -11,3 +11,6 @@ SSC_ADMM_v1.1/*
 
 # Large databases
 data
+
+# Saved matrices for faster loading
+saved

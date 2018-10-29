@@ -12,6 +12,11 @@ from supporting_files.helpers import optimize
 eng = matlab.engine.start_matlab()
 eng.cd("./SSC_ADMM_v1.1")
 
+#savemat('./saved/yaleB.mat', mdict={'rawX':images_dsift, 'X':images_norm, 'Y':labels})
+#images_dsift = loadmat("./saved/yaleB.mat")['rawX']
+#images_norm = loadmat("./saved/yaleB.mat")['X']
+#labels = loadmat("./saved/yaleB.mat")['Y']
+
 def load_YaleB(path='./data/CroppedYale'):
     train, test, img_size = img2matrix.batch_convert_YaleB(path, truncate_num=38, images_per_person=None)
 
@@ -21,7 +26,7 @@ def load_YaleB(path='./data/CroppedYale'):
     images_raw = images_full[:, :32256]
     images_dsift = images_full[:, 32256:]
 
-    return images_dsift
+    return images_dsift, labels
 
 def preprocess(images_dsift):
     # Perform PCA
@@ -36,6 +41,7 @@ def preprocess(images_dsift):
     return images_norm
 
 def run_model(images_norm,
+              labels,
               epochs_pretrain = 101,
               epochs = 101,
               alpha1 = 20,
