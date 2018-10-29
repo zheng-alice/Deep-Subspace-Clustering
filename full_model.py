@@ -9,13 +9,18 @@ from sklearn.metrics import adjusted_rand_score as ari
 from sklearn.metrics import normalized_mutual_info_score as nmi
 from supporting_files.ji_zhang import err_rate
 from supporting_files.helpers import optimize
-eng = matlab.engine.start_matlab()
-eng.cd("./SSC_ADMM_v1.1")
+
+#eng = start_matlab()
 
 #savemat('./saved/yaleB.mat', mdict={'rawX':images_dsift, 'X':images_norm, 'Y':labels})
 #images_dsift = loadmat("./saved/yaleB.mat")['rawX']
 #images_norm = loadmat("./saved/yaleB.mat")['X']
 #labels = loadmat("./saved/yaleB.mat")['Y']
+
+def start_matlab():
+    eng = matlab.engine.start_matlab()
+    eng.cd("./SSC_ADMM_v1.1")
+    return eng
 
 def load_YaleB(path='./data/CroppedYale'):
     train, test, img_size = img2matrix.batch_convert_YaleB(path, truncate_num=38, images_per_person=None)
@@ -56,7 +61,7 @@ def run_model(images_norm,
     # Matlab SSC #1
     savemat('./temp.mat', mdict={'X': images_norm})
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter)
+    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1)
     C = loadmat("./temp.mat")['C']
 
     # Train Autoencoder
