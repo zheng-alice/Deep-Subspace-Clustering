@@ -86,6 +86,7 @@ class DeepSubspaceClustering:
         return weights, biases
 
     def train(self, batch_size=100, epochs=100, print_step=100):
+        print()
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         batch_generator = GenBatch(self.inputX, C=self.inputC, batch_size=batch_size)

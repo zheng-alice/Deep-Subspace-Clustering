@@ -23,7 +23,6 @@ class StackedDenoisingAutoencoder:
         self.weights, self.biases = [], []
         self.weights_enc, self.biases_enc = [], []
         self.weights_dec, self.biases_dec = [], []
-        epochs = [100 for i in range(len(dims))]
         # assert len(dims) == len(epochs)
 
     def _fit(self, x):

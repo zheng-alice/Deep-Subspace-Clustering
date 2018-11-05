@@ -82,16 +82,16 @@ def run_model(images_norm,
               lambda2 = 0.001,
               alpha2 = 20,
               maxIter2 = 16):
-    print("\nFinding affinity matrix...")
+    print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
     print("--------------------------")
     start_time = time.time()
 
     # Calculate C matrix
     # Matlab SSC #1
-    savemat('./temp.mat', mdict={'X': images_norm})
+    savemat('./temp/temp.mat', mdict={'X': images_norm})
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1)
-    C = loadmat("./temp.mat")['C']
+    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, int(maxIter1))
+    C = loadmat("./temp/temp.mat")['C']
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
@@ -110,17 +110,17 @@ def run_model(images_norm,
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
 
-    print("\nClustering with SSC...")
+    print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
     print("----------------------")
     start_time = time.time()
     
     # Cluster
     # Matlab SSC #2
-    savemat('./temp.mat', mdict={'X': images_HM2})
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2)
+    savemat('./temp/temp.mat', mdict={'X': images_HM2})
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, int(maxIter2))
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
-    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+    print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
     # Evaluate
-    return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred), ari(labels, labels_pred)
+    return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred)

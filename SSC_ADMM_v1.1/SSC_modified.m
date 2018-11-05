@@ -36,7 +36,7 @@ end
 
 %still the fastest way to pass large ndarrays
 %the alternative takes 37 seconds per (2350x300) array
-load ./../temp.mat X;
+load ./../temp/temp.mat X;
 X = double(X.');
 Xp = DataProjection(X,r);
 
@@ -52,4 +52,4 @@ end
 CKSym = BuildAdjacency(thrC(C,rho));
 grps = SpectralClustering(CKSym,k);
 
-save ./../temp.mat C
+save ./../temp/temp.mat C
