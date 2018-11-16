@@ -10,8 +10,14 @@
 % Copyright @ Ehsan Elhamifar, 2012
 %--------------------------------------------------------------------------
 
-function [grps] = SSC_modified(k,r,affine,alpha,outlier,rho,thr,maxIter)
+function [grps] = SSC_modified(k,r,affine,alpha,outlier,rho,thr,maxIter,cluster,seed)
 
+if (nargin < 10)
+    seed = -1;
+end
+if (nargin < 9)
+    cluster = true;
+end
 if (nargin < 8)
     maxIter = 150;
 end
@@ -49,7 +55,14 @@ else
     C = CMat(1:N,:);
 end
 
-CKSym = BuildAdjacency(thrC(C,rho));
-grps = SpectralClustering(CKSym,k);
+grps = [];
+if (cluster)
+    disp("Clustering...")
+    CKSym = BuildAdjacency(thrC(C,rho));
+    if (seed >= 0)
+        rng(seed);
+    end
+    grps = SpectralClustering(CKSym,k);
+end
 
 save ./../temp/temp.mat C

@@ -24,6 +24,7 @@ class StackedDenoisingAutoencoder:
         self.weights_enc, self.biases_enc = [], []
         self.weights_dec, self.biases_dec = [], []
         # assert len(dims) == len(epochs)
+        print(np.random.choice([1,2,3,4,5]))
 
     def _fit(self, x):
         #modification: only run for half the weight layers
@@ -34,8 +35,8 @@ class StackedDenoisingAutoencoder:
                          hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
                          batch_size=self.batch_size, lr=self.lr, print_step=self.print_step,
                          weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
-            self.weights = self.weights_enc+list(reversed(self.weights_dec))
-            self.biases = self.biases_enc+list(reversed(self.biases_dec))
+        self.weights = self.weights_enc+list(reversed(self.weights_dec))
+        self.biases = self.biases_enc+list(reversed(self.biases_dec))
     
     def _add_noise(self, x):
         if self.noise == 'gaussian':
@@ -76,12 +77,12 @@ class StackedDenoisingAutoencoder:
             encode = {'weights': tf.Variable(tf.random_uniform([input_dim, hidden_dim], minval=-r, maxval=r, dtype=tf.float32)),
                       'biases': tf.Variable(tf.zeros([hidden_dim], dtype=tf.float32))}
             decode = {'biases': tf.Variable(tf.zeros([input_dim], dtype=tf.float32)),
-                      'weights': tf.transpose(encode['weights'])}
+                      'weights': tf.Variable(tf.transpose(encode['weights'].initialized_value()))}
         elif weight_init == 'default':
             encode = {'weights': tf.Variable(tf.truncated_normal([input_dim, hidden_dim], dtype=tf.float32)),
                       'biases': tf.Variable(tf.truncated_normal([hidden_dim], dtype=tf.float32))}
             decode = {'biases': tf.Variable(tf.truncated_normal([input_dim], dtype=tf.float32)),
-                      'weights': tf.transpose(encode['weights'])}
+                      'weights': tf.Variable(tf.transpose(encode['weights'].initialized_value()))}
 
         encoded = self.activate(tf.matmul(x, encode['weights']) + encode['biases'], activation)
         decoded = tf.matmul(encoded, decode['weights']) + decode['biases']
@@ -101,7 +102,7 @@ class StackedDenoisingAutoencoder:
                 l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
                 print('epoch {0}: global loss = {1}'.format(i, l))
         # debug
-        # print('Decoded', sess.run(decoded, feed_dict={x: self.data_x_})[0])
+        #print('Decoded', sess.run(decoded, feed_dict={x: data_x, x_: data_x_})[0])
         self.weights_enc.append(sess.run(encode['weights']))
         self.biases_enc.append(sess.run(encode['biases']))
         self.weights_dec.append(sess.run(decode['weights']))

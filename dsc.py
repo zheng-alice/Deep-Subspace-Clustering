@@ -1,4 +1,4 @@
-from supporting_files.sda import StackedDenoisingAutoencoder
+import supporting_files.sda
 import tensorflow as tf
 import numpy as np
 from supporting_files.nncomponents import *
@@ -8,7 +8,10 @@ class DeepSubspaceClustering:
 
     def __init__(self, inputX, C=None, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
                  weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
-                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100]):
+                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None):
+        tf.reset_default_graph()
+        tf.set_random_seed(seed)
+        np.random.seed(seed)
 
         self.noise = noise
         n_sample, n_feat = inputX.shape
@@ -68,19 +71,19 @@ class DeepSubspaceClustering:
     def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':
             n_in = self.inputX.shape[1]
             for d in dims:
                 r = 4*np.sqrt(6.0/(n_in+d))
-                weights.append(tf.random_uniform([n_in, d], minval=-r, maxval=r))
-                biases.append(tf.zeros([d,]))
+                weights.append(tf.Variable(tf.random_uniform([n_in, d], minval=-r, maxval=r)))
+                biases.append(tf.Variable(tf.zeros([d,])))
                 n_in = d
 
         return weights, biases

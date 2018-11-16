@@ -72,6 +72,7 @@ def preprocess(images_dsift):
 
 def run_model(images_norm,
               labels,
+              seed = None,
               epochs_pretrain = 101,
               epochs = 101,
               lr_pretrain = 0.08,
@@ -83,14 +84,18 @@ def run_model(images_norm,
               alpha2 = 20,
               maxIter2 = 16):
     print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
-    print("--------------------------")
+    print("-------------------------------------")
     start_time = time.time()
 
     # Calculate C matrix
     # Matlab SSC #1
     savemat('./temp/temp.mat', mdict={'X': images_norm})
+    if(seed is None):
+        seed2 = -1
+    else:
+        seed2 = seed
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, int(maxIter1))
+    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, int(maxIter1), False, seed2)
     C = loadmat("./temp/temp.mat")['C']
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
@@ -103,7 +108,7 @@ def run_model(images_norm,
     # Train Autoencoder
     d = dsc.DeepSubspaceClustering(images_norm, C=C, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
                                    weight_init='sda-uniform', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
-                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt')
+                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
     images_HM2 = d.result
 
@@ -111,13 +116,13 @@ def run_model(images_norm,
 
 
     print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
-    print("----------------------")
+    print("---------------------------------")
     start_time = time.time()
     
     # Cluster
     # Matlab SSC #2
     savemat('./temp/temp.mat', mdict={'X': images_HM2})
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, int(maxIter2))
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, int(maxIter2), True, seed2)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
