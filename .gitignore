@@ -1,6 +1,7 @@
 .ipynb_checkpoints
 __pycache__
 cvxpy.egg-info
+vscode
 ~$*
 
 # ADMM implementation of SSC in Matlab
