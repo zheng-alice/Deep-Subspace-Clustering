@@ -26,14 +26,15 @@ def single_img2matrix(pgm_dir, k=4):
 
 
 def single_img2dsift(pgm_dir):
-    extractor = dsift.DsiftExtractor(12, 12, 1)
     image = misc.imread(pgm_dir)
     # image = np.mean(np.double(image), axis=2) # convert RGB image into gray image
+    # MODIFICATION: number of patches independent of image size
+    # patchSize used to be hard-set to 12
+    patchSize = max(image.shape) // 16
+    extractor = dsift.DsiftExtractor(patchSize, patchSize, 1)
     feaArr, positions = extractor.process_image(image)
     feaArr = feaArr.reshape(np.size(feaArr))
-    # IMPORTANT MODIFICATION:
-    # dsift features have been APPENDED TO the original grayscale values
-    return np.concatenate(((image/255).flatten(), feaArr))
+    return feaArr
 
 
 def batch_convert_YaleB(img_path, truncate_num=30, images_per_person=None):

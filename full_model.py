@@ -1,5 +1,4 @@
 import dsc
-import img2matrix
 import matlab.engine
 import numpy as np
 import supporting_files.sda as sda
@@ -13,7 +12,11 @@ from supporting_files.helpers import optimize
 
 #eng = start_matlab()
 
+#from load import load_YaleB
+#images_dsift, labels = load_YaleB()
+#images_norm = preprocess(images_dsift)
 #savemat('./saved/yaleB.mat', mdict={'rawX':images_dsift, 'X':images_norm, 'Y':labels})
+
 #images_dsift = loadmat("./saved/yaleB.mat")['rawX']
 #images_norm = loadmat("./saved/yaleB.mat")['X']
 #labels = loadmat("./saved/yaleB.mat")['Y'].reshape(-1)
@@ -29,21 +32,6 @@ def start_matlab():
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
     
     return eng
-
-def load_YaleB(path='./data/CroppedYale'):
-    print("\nLoading YaleB...")
-    print("----------------")
-    start_time = time.time()
-
-    train, test, img_size = img2matrix.batch_convert_YaleB(path, truncate_num=38, images_per_person=None)
-    images_full = train[0]
-    labels = train[1]
-    images_raw = images_full[:, :32256]
-    images_dsift = images_full[:, 32256:]
-
-    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
-
-    return images_dsift, labels
 
 def preprocess(images_dsift):
     print("\nPerforming PCA...")
@@ -83,9 +71,14 @@ def run_model(images_norm,
               lambda2 = 0.001,
               alpha2 = 20,
               maxIter2 = 16):
+    # Hard-cast to avoid errors
+    maxIter1 = int(maxIter1)
+    maxIter2 = int(maxIter2)
+    
     print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
     print("-------------------------------------")
     start_time = time.time()
+
 
     # Calculate C matrix
     # Matlab SSC #1
@@ -95,7 +88,7 @@ def run_model(images_norm,
     else:
         seed2 = seed
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, int(maxIter1), False, seed2)
+    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2)
     C = loadmat("./temp/temp.mat")['C']
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
@@ -122,7 +115,7 @@ def run_model(images_norm,
     # Cluster
     # Matlab SSC #2
     savemat('./temp/temp.mat', mdict={'X': images_HM2})
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, int(maxIter2), True, seed2)
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
