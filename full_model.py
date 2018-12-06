@@ -70,18 +70,20 @@ def run_model(images_norm,
               lambda1 = 0.0001,
               lambda2 = 0.001,
               alpha2 = 20,
-              maxIter2 = 16):
+              maxIter2 = 16,
+              verbose = True):
     # Hard-cast to avoid errors
     maxIter1 = int(maxIter1)
     maxIter2 = int(maxIter2)
     
-    print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
-    print("-------------------------------------")
-    start_time = time.time()
-
 
     # Calculate C matrix
     # Matlab SSC #1
+    if(verbose):
+        print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
+        print("-------------------------------------")
+        start_time = time.time()
+
     savemat('./temp/temp.mat', mdict={'X': images_norm})
     if(seed is None):
         seed2 = -1
@@ -91,34 +93,37 @@ def run_model(images_norm,
     eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2)
     C = loadmat("./temp/temp.mat")['C']
 
-    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+    if(verbose):
+        print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
-
-    print("\nTraining Autoencoder...")
-    print("-----------------------")
-    start_time = time.time()
 
     # Train Autoencoder
+        print("\nTraining Autoencoder...")
+        print("-----------------------")
+        start_time = time.time()
+
     d = dsc.DeepSubspaceClustering(images_norm, C=C, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
                                    weight_init='sda-uniform', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
-                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed)
+                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
     images_HM2 = d.result
 
-    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+    if(verbose):
+        print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
 
-    print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
-    print("---------------------------------")
-    start_time = time.time()
-    
     # Cluster
     # Matlab SSC #2
+        print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
+        print("---------------------------------")
+        start_time = time.time()
+    
     savemat('./temp/temp.mat', mdict={'X': images_HM2})
     grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
-    print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
+    if(verbose):
+        print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
     # Evaluate
     return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred)

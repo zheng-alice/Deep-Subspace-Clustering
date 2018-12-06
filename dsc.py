@@ -8,10 +8,12 @@ class DeepSubspaceClustering:
 
     def __init__(self, inputX, C=None, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
                  weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
-                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None):
+                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
         np.random.seed(seed)
+
+        self.verbose = verbose
 
         self.noise = noise
         n_sample, n_feat = inputX.shape
@@ -71,11 +73,11 @@ class DeepSubspaceClustering:
     def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay, self.verbose)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay, self.verbose)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':
@@ -89,7 +91,8 @@ class DeepSubspaceClustering:
         return weights, biases
 
     def train(self, batch_size=100, epochs=100, print_step=100):
-        print()
+        if(self.verbose):
+            print()
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         batch_generator = GenBatch(self.inputX, C=self.inputC, batch_size=batch_size)
@@ -105,7 +108,7 @@ class DeepSubspaceClustering:
 
             self.losses.append(sess.run(self.cost, feed_dict={self.X: x_batch, self.C: c_batch}))
 
-            if i % print_step == 0:
+            if(self.verbose and i % print_step == 0):
                 print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
         # for i in range(1, epochs+1):

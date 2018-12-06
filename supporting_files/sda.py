@@ -7,7 +7,7 @@ from supporting_files.helpers import optimize
 class StackedDenoisingAutoencoder:
     """A stacked deep autoencoder with denoising capability"""
 
-    def __init__(self, dims=[100,100,100], epochs=[100,100,100], activations=['sigmoid']*3, noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, weight_init='default', optimizer="Adam", decay='none'):
+    def __init__(self, dims=[100,100,100], epochs=[100,100,100], activations=['sigmoid']*3, noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, weight_init='default', optimizer="Adam", decay='none', verbose=True):
         self.print_step = print_step
         self.batch_size = batch_size
         self.lr = lr
@@ -23,14 +23,15 @@ class StackedDenoisingAutoencoder:
         self.weights, self.biases = [], []
         self.weights_enc, self.biases_enc = [], []
         self.weights_dec, self.biases_dec = [], []
+        self.verbose = verbose
         # assert len(dims) == len(epochs)
-        print(np.random.choice([1,2,3,4,5]))
 
     def _fit(self, x):
         #modification: only run for half the weight layers
         #use the decoder weight values for the latter half
         for i in range(self.depth//2):
-            print('Layer {0}'.format(i + 1))
+            if(self.verbose):
+                print('Layer {0}'.format(i + 1))
             x = self._run(data_x=self._add_noise(x), activation=self.activations[i], data_x_=x,
                          hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
                          batch_size=self.batch_size, lr=self.lr, print_step=self.print_step,
@@ -68,7 +69,8 @@ class StackedDenoisingAutoencoder:
 
     def _run(self, data_x, data_x_, hidden_dim, activation, loss, lr, print_step, epochs, batch_size, weight_init, optimizer, decay):
         input_dim = len(data_x[0])
-        print(str(input_dim) + " -> " + str(hidden_dim))
+        if(self.verbose):
+            print(str(input_dim) + " -> " + str(hidden_dim))
         sess = tf.Session()
         x = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x')
         x_ = tf.placeholder(dtype=tf.float32, shape=[None, input_dim], name='x_')
@@ -100,7 +102,8 @@ class StackedDenoisingAutoencoder:
             sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
             if i % print_step == 0:
                 l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
-                print('epoch {0}: global loss = {1}'.format(i, l))
+                if(self.verbose):
+                    print('epoch {0}: global loss = {1}'.format(i, l))
         # debug
         #print('Decoded', sess.run(decoded, feed_dict={x: data_x, x_: data_x_})[0])
         self.weights_enc.append(sess.run(encode['weights']))
