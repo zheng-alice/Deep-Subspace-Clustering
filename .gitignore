@@ -14,7 +14,7 @@ SSC_ADMM_v1.1/*
 data
 
 # Saved matrices for faster loading
-saved
+saved/raw
 
 # Optimization results
 optims
