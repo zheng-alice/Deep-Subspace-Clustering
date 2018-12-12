@@ -2,6 +2,7 @@
 __pycache__
 cvxpy.egg-info
 .vscode
+.pyc
 ~$*
 
 # ADMM implementation of SSC in Matlab
