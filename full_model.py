@@ -14,10 +14,10 @@ from supporting_files.helpers import optimize
 
 #from load import load_YaleB
 #images_dsift, labels = load_YaleB()
+#savemat('./saved/raw/yaleB.mat', mdict={'X':images_dsift, 'Y':labels})
 #images_norm = preprocess(images_dsift)
-#savemat('./saved/yaleB.mat', mdict={'rawX':images_dsift, 'X':images_norm, 'Y':labels})
+#savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
 
-#images_dsift = loadmat("./saved/yaleB.mat")['rawX']
 #images_norm = loadmat("./saved/yaleB.mat")['X']
 #labels = loadmat("./saved/yaleB.mat")['Y'].reshape(-1)
 
