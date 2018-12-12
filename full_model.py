@@ -18,8 +18,10 @@ from supporting_files.helpers import optimize
 #images_norm = preprocess(images_dsift)
 #savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
 
-#images_norm = loadmat("./saved/yaleB.mat")['X']
-#labels = loadmat("./saved/yaleB.mat")['Y'].reshape(-1)
+#data_loaded = loadmat("./saved/processed/yaleB.mat")
+#images_norm = data_loaded['X']
+#labels = data_loaded['Y'].reshape(-1)
+#run_model(images_norm, labels)
 
 def start_matlab():
     print("\nStarting MATLAB engine...")
