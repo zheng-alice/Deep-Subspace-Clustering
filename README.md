@@ -34,6 +34,7 @@ Check the installation by running in Python:
 ### Packages
 Through ```pip``` or ```conda```, install the following:
 * sklearn
+* scikit-optimize
 * munkres
 * scipy
 * matplotlib

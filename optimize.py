@@ -78,7 +78,8 @@ def objective(hyper_params):
     def internal(**hyper_params):
         global seed_, verb_model_
         try:
-            return 1-fixed_params_copy.pop('model')(**fixed_params_copy, **hyper_params, verbose=verb_model_)[0]
+            fixed_params_copy.update(hyper_params)
+            return 1-fixed_params_copy.pop('model')(verbose=verb_model_, **fixed_params_copy)[0]
         except Exception as ex:
             if(type(ex) == KeyError):
                 raise ex
@@ -162,7 +163,7 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
     fixed_params = get_params(scenario)
     if(not os.path.isdir("optims/scenario" + str(scenario))):
         os.mkdir("optims/scenario" + str(scenario))
-
+    
     for seed in seeds:
         print("Seed: " + str(seed))
         for func_name in function_dict.keys():
