@@ -65,4 +65,4 @@ if (cluster)
     grps = SpectralClustering(CKSym,k);
 end
 
-save ./../temp/temp.mat C
+save ./../temp/temp.mat C -mat

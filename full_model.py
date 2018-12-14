@@ -2,6 +2,8 @@ import dsc
 import numpy as np
 import supporting_files.sda as sda
 import time
+import sys
+from engines import start_matlab, start_octave
 from scipy.io import savemat, loadmat
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score as ari
@@ -9,26 +11,12 @@ from sklearn.metrics import normalized_mutual_info_score as nmi
 from supporting_files.ji_zhang import err_rate
 from supporting_files.helpers import optimize
 
-eng = start_matlab()
-
-#from load import load_YaleB
-#images_dsift, labels = load_YaleB()
-#savemat('./saved/raw/yaleB.mat', mdict={'X':images_dsift, 'Y':labels})
-#images_norm = preprocess(images_dsift)
-#savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
-
-#data_loaded = loadmat("./saved/processed/yaleB.mat")
-#images_norm = data_loaded['X']
-#labels = data_loaded['Y'].reshape(-1)
-#run_model(images_norm, labels)
-
 def start_matlab():
     print("\nStarting MATLAB engine...")
     print("-------------------------")
     start_time = time.time()
     
     import matlab.engine
-    from io import StringIO
     eng = matlab.engine.start_matlab()
     eng.cd("./SSC_ADMM_v1.1")
 
@@ -47,6 +35,20 @@ def start_octave():
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
     return octave
+
+eng = start_matlab()
+
+#from load import load_YaleB
+#images_dsift, labels = load_YaleB()
+#savemat('./saved/raw/yaleB.mat', mdict={'X':images_dsift, 'Y':labels})
+#images_norm = preprocess(images_dsift)
+#savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
+
+#from scipy.io import loadmat
+#data_loaded = loadmat("./saved/processed/yaleB.mat")
+#images_norm = data_loaded['X']
+#labels = data_loaded['Y'].reshape(-1)
+#run_model(images_norm, labels)
 
 def preprocess(images_dsift):
     print("\nPerforming PCA...")
@@ -97,14 +99,20 @@ def run_model(images_norm,
     mlab_kwargs = {}
     if(verbose):
         start_time = time.time()
+        print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
+        print("-------------------------------------")
+    else:
+        #suppress matlab output
         if(type(eng).__name__ == 'MatlabEngine'):
+            if(sys.version_info[0] < 3):
+                from StringIO import StringIO
+            else:
+                from io import StringIO
             mlab_kwargs['stdout'] = StringIO()
         elif(type(eng).__name__ == 'Oct2Py'):
             def void(x):
                 pass
             mlab_kwargs['stream_handler'] = void
-        print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
-        print("-------------------------------------")
 
     savemat('./temp/temp.mat', mdict={'X': images_norm})
     if(seed is None):
