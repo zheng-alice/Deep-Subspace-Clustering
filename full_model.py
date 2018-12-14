@@ -27,8 +27,8 @@ def start_matlab():
     print("-------------------------")
     start_time = time.time()
     
-	import matlab.engine
-	from io import StringIO
+    import matlab.engine
+    from io import StringIO
     eng = matlab.engine.start_matlab()
     eng.cd("./SSC_ADMM_v1.1")
 
@@ -37,12 +37,12 @@ def start_matlab():
     return eng
 
 def start_octave():
-	print("\nStarting Octave...")
+    print("\nStarting Octave...")
     print("------------------")
     start_time = time.time()
 
     from oct2py import octave
-	octave.cd("./SSC_ADMM_v1.1")
+    octave.cd("./SSC_ADMM_v1.1")
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
@@ -98,11 +98,11 @@ def run_model(images_norm,
     if(verbose):
         start_time = time.time()
         if(type(eng).__name__ == 'MatlabEngine'):
-        	mlab_kwargs['stdout'] = StringIO()
+            mlab_kwargs['stdout'] = StringIO()
         elif(type(eng).__name__ == 'Oct2Py'):
-        	def void(x):
-        		pass
-        	mlab_kwargs['stream_handler'] = void
+            def void(x):
+                pass
+            mlab_kwargs['stream_handler'] = void
         print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
         print("-------------------------------------")
 
