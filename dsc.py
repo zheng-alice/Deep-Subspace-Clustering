@@ -1,8 +1,11 @@
 import supporting_files.sda
 import tensorflow as tf
 import numpy as np
+import os
 from supporting_files.nncomponents import *
 from supporting_files.helpers import *
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 class DeepSubspaceClustering:
 
