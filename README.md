@@ -7,9 +7,14 @@ Download or ```git clone``` the repository.
 ### Prerequisites
 * [Tensorflow](https://www.tensorflow.org/install/) - installed in a working Python environment such that ```import tensorflow``` throws no errors
 * [Matlab](https://www.mathworks.com/help/install/ug/install-mathworks-software.html) - has an activated license, can be launched from desktop
+* OR [Octave](https://www.gnu.org/software/octave/#install) - can be launched via ```octave``` in console
 
-### MATLAB API for Python
-Instructions taken from [here](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html)
+### M-files
+
+#### Option 1: MATLAB API for Python
+Requires a working and activated version of [MATLAB](https://www.mathworks.com/help/install/ug/install-mathworks-software.html).
+
+Instructions taken from [here](https://www.mathworks.com/help/matlab/matlab_external/install-the-matlab-engine-for-python.html).
 
 Launch MATLAB and run:
 ```matlab
@@ -29,6 +34,29 @@ Check the installation by running in Python:
 >>> import matlab.engine
 >>> eng = matlab.engine.start_matlab()
 >>> eng.isprime(37)
+```
+
+#### Option 2: Python to Octave bridge
+A viable substitute for not having MATLAB. Requires a working version of [Octave](https://www.gnu.org/software/octave/#install).
+
+Install oct2py. Make sure that ```pip``` is tied to a python version that has tensorflow installed.
+```bash
+pip install oct2py
+```
+
+Check the installation by running in Python:
+```python
+>>> from oct2py import octave
+>>> octave.isprime(37)
+```
+
+Indicate that you'll be using Octave by changing the first non-import line of ```full_model.py``` from
+```python
+eng = start_matlab()
+```
+to
+```python
+eng = start_octave()
 ```
 
 ### Packages

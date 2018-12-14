@@ -64,11 +64,8 @@ def opt_stats(res, start_time=None):
 
 def opt_plot(res):
     global show_plot
-    plot = plot_convergence(res, yscale='log')
     if(show_plot):
-        plt.show(plot)
-    return plot
-
+        return plot_convergence(res, yscale='log')
 
 def objective(hyper_params):
     global fixed_params_

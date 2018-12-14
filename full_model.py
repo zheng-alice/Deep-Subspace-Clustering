@@ -1,5 +1,4 @@
 import dsc
-import matlab.engine
 import numpy as np
 import supporting_files.sda as sda
 import time
@@ -10,7 +9,7 @@ from sklearn.metrics import normalized_mutual_info_score as nmi
 from supporting_files.ji_zhang import err_rate
 from supporting_files.helpers import optimize
 
-#eng = start_matlab()
+eng = start_matlab()
 
 #from load import load_YaleB
 #images_dsift, labels = load_YaleB()
@@ -28,12 +27,26 @@ def start_matlab():
     print("-------------------------")
     start_time = time.time()
     
+	import matlab.engine
+	from io import StringIO
     eng = matlab.engine.start_matlab()
     eng.cd("./SSC_ADMM_v1.1")
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
     
     return eng
+
+def start_octave():
+	print("\nStarting Octave...")
+    print("------------------")
+    start_time = time.time()
+
+    from oct2py import octave
+	octave.cd("./SSC_ADMM_v1.1")
+
+    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+
+    return octave
 
 def preprocess(images_dsift):
     print("\nPerforming PCA...")
@@ -81,10 +94,17 @@ def run_model(images_norm,
 
     # Calculate C matrix
     # Matlab SSC #1
+    mlab_kwargs = {}
     if(verbose):
+        start_time = time.time()
+        if(type(eng).__name__ == 'MatlabEngine'):
+        	mlab_kwargs['stdout'] = StringIO()
+        elif(type(eng).__name__ == 'Oct2Py'):
+        	def void(x):
+        		pass
+        	mlab_kwargs['stream_handler'] = void
         print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
         print("-------------------------------------")
-        start_time = time.time()
 
     savemat('./temp/temp.mat', mdict={'X': images_norm})
     if(seed is None):
@@ -92,7 +112,7 @@ def run_model(images_norm,
     else:
         seed2 = seed
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2)
+    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2, **mlab_kwargs)
     C = loadmat("./temp/temp.mat")['C']
 
     if(verbose):
@@ -121,7 +141,7 @@ def run_model(images_norm,
         start_time = time.time()
     
     savemat('./temp/temp.mat', mdict={'X': images_HM2})
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2)
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     if(verbose):
