@@ -3,7 +3,6 @@ import numpy as np
 import supporting_files.sda as sda
 import time
 import sys
-from engines import start_matlab, start_octave
 from scipy.io import savemat, loadmat
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score as ari
