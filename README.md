@@ -21,7 +21,7 @@ Launch MATLAB and run:
 >>> matlabroot
 ```
 
-Run the following on the command line, substituting the previous result into the first line. Make sure that ```python``` references a python version that has tensorflow installed.
+Run the following on the command line, substituting the previous result into the first line. Make sure that ```python``` references a python version that has tensorflow installed:
 ```bash
 cd matlabroot
 cd extern/engines/python
@@ -39,7 +39,7 @@ Check the installation by running in Python:
 #### Option 2: Python to Octave bridge
 A viable substitute for not having MATLAB. Requires a working version of [Octave](https://www.gnu.org/software/octave/#install).
 
-Install oct2py. Make sure that ```pip``` is tied to a python version that has tensorflow installed.
+Install oct2py. Make sure that ```pip``` is tied to a python version that has tensorflow installed:
 ```bash
 pip install oct2py
 ```
@@ -50,14 +50,7 @@ Check the installation by running in Python:
 >>> octave.isprime(37)
 ```
 
-Indicate that you'll be using Octave by changing the first non-import line of ```full_model.py``` from
-```python
-eng = start_matlab()
-```
-to
-```python
-eng = start_octave()
-```
+Indicate that you'll be using Octave by changing the first non-import line of ```full_model.py``` from ```eng = start_matlab()``` to ```eng = start_octave()```.
 
 ### Packages
 Through ```pip``` or ```conda```, install the following:
