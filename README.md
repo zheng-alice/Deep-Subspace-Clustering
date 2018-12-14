@@ -27,17 +27,29 @@ cd matlabroot
 cd extern/engines/python
 python setup.py install
 ```
-If installation fails due to denied permissions, [install/build in a non-default location](https://www.mathworks.com/help/matlab/matlab_external/install-matlab-engine-api-for-python-in-nondefault-locations.html). If installing in a non-default fonder, don't forget to add that folder to your ```PYTHONPATH```.
+
+If installation fails due to denied permissions, [install/build in a non-default location](https://www.mathworks.com/help/matlab/matlab_external/install-matlab-engine-api-for-python-in-nondefault-locations.html).
+
+If installing in a non-default folder, don't forget to add that folder to your ```PYTHONPATH```. This will be reset on a reload, but can be appended to the end of ```.bashrc``` to execute on every shell start:
+```bash
+export PYTHONPATH=$PYTHONPATH:~/installdir/lib/python2.7/site-packages
+```
+
+If that somehow doesn't work, it's possible to modify Python's search path. Run this before attempting to ```import matlab```:
+```python
+import sys
+sys.path.insert(0, "/full/path/to/installdir/lib/python2.7/site-packages")
+```
 
 Check the installation by running in Python:
 ```python
 >>> import matlab.engine
 >>> eng = matlab.engine.start_matlab()
 >>> eng.isprime(37)
-```
+``` 
 
 #### Option 2: Python to Octave bridge
-A viable substitute for not having MATLAB. Requires a working version of [Octave](https://www.gnu.org/software/octave/#install).
+A viable substitute for not having MATLAB. Requires a working version of [GNU Octave](https://www.gnu.org/software/octave/#install).
 
 Install oct2py. Make sure that ```pip``` is tied to a python version that has tensorflow installed:
 ```bash
@@ -50,7 +62,28 @@ Check the installation by running in Python:
 >>> octave.isprime(37)
 ```
 
-Indicate that you'll be using Octave by changing the first non-import line of ```full_model.py``` from ```eng = start_matlab()``` to ```eng = start_octave()```.
+Indicate that you'll be using Octave by changing ```eng = start_matlab()``` to ```eng = start_octave()``` in ```full_model.py```.
+
+If running ```kmeans``` in the Octave console says that it's undefined, you need to install the statistics package:
+```bash
+sudo apt-get install octave-statistics
+```
+Then, add the line ```pkg load statistics``` to ```SpectralClustering.m```
+
+If you don't have access to ```sudo```, do the following instead. Make sure to substitute in the correct version number:
+```bash
+apt-get download octave-statistics
+dpkg -x octave-statistics_1.2.4-1_all.deb dir
+```
+```octave
+octave:1> addpath(genpath("~/dir/usr/share/octave/packages/statistics-1.2.4"))
+octave:2> savepath
+```
+
+Verify that kmeans works:
+```octave
+octave:1> kmeans(randn(10, 2), 2)
+```
 
 ### Packages
 Through ```pip``` or ```conda```, install the following:
