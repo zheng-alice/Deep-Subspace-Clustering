@@ -5,7 +5,11 @@ import os
 from supporting_files.nncomponents import *
 from supporting_files.helpers import *
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+# print any active GPUs
+sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+sess.close() 
 
 class DeepSubspaceClustering:
 

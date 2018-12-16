@@ -32,7 +32,7 @@ If installation fails due to denied permissions, [install/build in a non-default
 
 If installing in a non-default folder, don't forget to add that folder to your ```PYTHONPATH```. This will be reset on a reload, but can be appended to the end of ```.bashrc``` to execute on every shell start:
 ```bash
-export PYTHONPATH=$PYTHONPATH:~/installdir/lib/python2.7/site-packages
+export PYTHONPATH=$PYTHONPATH:~/path/to/installdir/lib/python2.7/site-packages
 ```
 
 If that somehow doesn't work, it's possible to modify Python's search path. Run this before attempting to ```import matlab```:
@@ -76,13 +76,13 @@ apt-get download octave-statistics
 dpkg -x octave-statistics_1.2.4-1_all.deb dir
 ```
 ```octave
-octave:1> addpath(genpath("~/dir/usr/share/octave/packages/statistics-1.2.4"))
+octave:1> addpath(genpath("~/path/to/dir/usr/share/octave/packages/statistics-1.2.4"))
 octave:2> savepath
 ```
 
 Verify that kmeans works:
 ```octave
-octave:1> kmeans(randn(10, 2), 2)
+octave:3> kmeans(randn(10, 2), 2)
 ```
 
 ### Packages

@@ -42,7 +42,7 @@ end
 
 %still the fastest way to pass large ndarrays
 %the alternative takes 37 seconds per (2350x300) array
-load ./../temp/temp.mat X;
+load ./../temp.mat X;
 X = double(X.');
 Xp = DataProjection(X,r);
 
@@ -65,4 +65,4 @@ if (cluster)
     grps = SpectralClustering(CKSym,k);
 end
 
-save ./../temp/temp.mat C -mat
+save ./../temp.mat C -mat

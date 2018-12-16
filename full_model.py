@@ -113,14 +113,14 @@ def run_model(images_norm,
                 pass
             mlab_kwargs['stream_handler'] = void
 
-    savemat('./temp/temp.mat', mdict={'X': images_norm})
+    savemat('./temp.mat', mdict={'X': images_norm})
     if(seed is None):
         seed2 = -1
     else:
         seed2 = seed
     k = len(np.unique(labels))
     eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2, **mlab_kwargs)
-    C = loadmat("./temp/temp.mat")['C']
+    C = loadmat("./temp.mat")['C']
 
     if(verbose):
         print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
@@ -147,7 +147,7 @@ def run_model(images_norm,
         print("---------------------------------")
         start_time = time.time()
     
-    savemat('./temp/temp.mat', mdict={'X': images_HM2})
+    savemat('./temp.mat', mdict={'X': images_HM2})
     grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
