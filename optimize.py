@@ -44,6 +44,13 @@ all_params = [
           Real(10**-1, 10**3, "log-uniform", name='alpha1'),
           Integer(10, 200, name='maxIter1'),
           Real(10**-1, 10**3, "log-uniform", name='alpha2'),
+          Integer(10, 200, name='maxIter2')]},
+    {'model':run_model, 'dataset':'Coil20', 'n_rand':50, 'epochs_pretrain':1001 , 'epochs':251, 'space':
+         [Real(10**-4, 10**0, "log-uniform", name='lr_pretrain'),
+          Real(10**-5, 10**-1, "log-uniform", name='lr'),
+          Real(10**-1, 10**3, "log-uniform", name='alpha1'),
+          Integer(10, 200, name='maxIter1'),
+          Real(10**-1, 10**3, "log-uniform", name='alpha2'),
           Integer(10, 200, name='maxIter2')]}]
 
 def get_params(scenario):
