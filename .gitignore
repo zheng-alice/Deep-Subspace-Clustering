@@ -12,6 +12,10 @@ SSC_ADMM_v1.1/*
 !/SSC_ADMM_v1.1/SSC_modified.m
 !/SSC_ADMM_v1.1/performance.txt
 
+# Octave and oct2py
+dir
+octave-workspace
+
 # Large databases
 data
 

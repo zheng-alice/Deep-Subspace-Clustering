@@ -29,13 +29,14 @@ def start_octave():
     start_time = time.time()
 
     from oct2py import octave
+    octave.eval("svdDriversCompare")
     octave.cd("./SSC_ADMM_v1.1")
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
     return octave
 
-eng = start_matlab()
+eng = start_octave()
 
 #from load import load_YaleB
 #images_dsift, labels = load_YaleB()
