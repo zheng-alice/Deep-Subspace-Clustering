@@ -53,7 +53,10 @@ Check the installation by running in Python:
 >>> octave.isprime(37)
 ```
 
-Indicate that you'll be using Octave by changing ```eng = start_matlab()``` to ```eng = start_octave()``` in ```full_model.py```.
+Indicate that you'll be using Octave. If on linux, add this to your ```.bashrc```. If on windows, use ```SETX```:
+```bash
+export ENGINE_CHOICE=OCTAVE
+```
 
 If running ```kmeans``` in the Octave console says that it's undefined, you need to install the statistics package:
 ```bash

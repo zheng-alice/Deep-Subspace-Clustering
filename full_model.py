@@ -1,5 +1,6 @@
 import dsc
 import numpy as np
+import os
 import supporting_files.sda as sda
 import time
 import sys
@@ -36,7 +37,13 @@ def start_octave():
 
     return octave
 
-eng = start_octave()
+eng_name = os.getenv('ENGINE_CHOICE', 'MATLAB')
+if(eng_name == 'MATLAB'):
+	eng = start_matlab()
+elif(eng_name == 'OCTAVE'):
+	eng = start_octave()
+else:
+	raise RuntimeError("Unknown ENGINE_CHOICE: " + eng_name)
 
 #from load import load_YaleB
 #images_dsift, labels = load_YaleB()
