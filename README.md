@@ -27,18 +27,9 @@ cd matlabroot
 cd extern/engines/python
 python setup.py install
 ```
-
-If installation fails due to denied permissions, [install/build in a non-default location](https://www.mathworks.com/help/matlab/matlab_external/install-matlab-engine-api-for-python-in-nondefault-locations.html).
-
-If installing in a non-default folder, don't forget to add that folder to your ```PYTHONPATH```. This will be reset on a reload, but can be appended to the end of ```.bashrc``` to execute on every shell start:
+If the last line fails due to denied permissions, point it to a directory that you have write permissions for. You can delete this directory afterwards:
 ```bash
-export PYTHONPATH=$PYTHONPATH:~/path/to/installdir/lib/python2.7/site-packages
-```
-
-If that somehow doesn't work, it's possible to modify Python's search path. Run this before attempting to ```import matlab```:
-```python
-import sys
-sys.path.insert(0, "/full/path/to/installdir/lib/python2.7/site-packages")
+python setup.py build --build-base=/full/path/to/temp install
 ```
 
 Check the installation by running in Python:
