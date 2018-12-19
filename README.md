@@ -1,6 +1,13 @@
 # Deep-Subspace-Clustering
 Description pending...
 
+## Sources used
+* Deep Subspace Clustering with Sparsity Prior [[IJCAI 2016](https://www.ijcai.org/Proceedings/16/Papers/275.pdf), [IEEE 2018](http://www.pengxi.me/wp-content/uploads/Papers/2018-TIP-StructAE.pdf)]
+  * [Author code](https://github.com/tonyabracadabra/Deep-Subspace-Clustering)
+  * [Naive implementation](https://github.com/JasonJiaxiangLi/Deep-subspace-clustering-LDA-preprocess)
+* Deep Subspace Clustering Networks [[arXiv 2017](https://arxiv.org/abs/1709.02508)]
+  * [Author code](https://github.com/panji1990/Deep-subspace-clustering-networks)
+
 ## Installation
 Download or ```git clone``` the repository.
 
