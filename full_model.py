@@ -30,8 +30,8 @@ def start_octave():
     start_time = time.time()
 
     from oct2py import octave
-    octave.eval("svdDriversCompare")
     octave.cd("./SSC_ADMM_v1.1")
+    octave.eval("svdDriversCompare")
 
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
@@ -39,11 +39,11 @@ def start_octave():
 
 eng_name = os.getenv('ENGINE_CHOICE', 'MATLAB')
 if(eng_name == 'MATLAB'):
-	eng = start_matlab()
+    eng = start_matlab()
 elif(eng_name == 'OCTAVE'):
-	eng = start_octave()
+    eng = start_octave()
 else:
-	raise RuntimeError("Unknown ENGINE_CHOICE: " + eng_name)
+    raise RuntimeError("Unknown ENGINE_CHOICE: " + eng_name)
 
 #from load import load_YaleB
 #images_dsift, labels = load_YaleB()
@@ -82,6 +82,24 @@ def preprocess(images_dsift):
 
     return images_norm
 
+def suppress_mlab(mlab_kwargs):
+    # Suppress matlab's printed output
+    if(type(eng).__name__ == 'MatlabEngine'):
+        if(sys.version_info[0] < 3):
+            from StringIO import StringIO
+        else:
+            from io import StringIO
+        mlab_kwargs['stdout'] = StringIO()
+    elif(type(eng).__name__ == 'Oct2Py'):
+        def void(x):
+            pass
+        mlab_kwargs['stream_handler'] = void
+
+def evaluate(labels, labels_pred):
+    # Compare predicted labels to known ground-truths
+    # Returns accuracy, NMI, ARI
+    return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred)
+
 def run_model(images_norm,
               labels,
               seed = None,
@@ -109,17 +127,7 @@ def run_model(images_norm,
         print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
         print("-------------------------------------")
     else:
-        #suppress matlab output
-        if(type(eng).__name__ == 'MatlabEngine'):
-            if(sys.version_info[0] < 3):
-                from StringIO import StringIO
-            else:
-                from io import StringIO
-            mlab_kwargs['stdout'] = StringIO()
-        elif(type(eng).__name__ == 'Oct2Py'):
-            def void(x):
-                pass
-            mlab_kwargs['stream_handler'] = void
+        suppress_mlab(mlab_kwargs)
 
     savemat('./temp.mat', mdict={'X': images_norm})
     if(seed is None):
@@ -135,9 +143,9 @@ def run_model(images_norm,
 
 
     # Train Autoencoder
+        start_time = time.time()
         print("\nTraining Autoencoder...")
         print("-----------------------")
-        start_time = time.time()
 
     d = dsc.DeepSubspaceClustering(images_norm, C=C, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
                                    weight_init='sda-uniform', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
@@ -163,4 +171,38 @@ def run_model(images_norm,
         print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
     # Evaluate
-    return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred)
+    return evaluate(labels, labels_pred)
+
+def run_ssc(images_norm,
+            labels,
+            seed = None,
+            alpha = 20,
+            maxIter = 6,
+            verbose = True):
+    # Hard-cast to avoid errors
+    maxIter = int(maxIter)
+    
+
+    # Cluster
+    # Matlab SSC
+    mlab_kwargs = {}
+    if(verbose):
+        start_time = time.time()
+        print("\nClustering with SSC (iter: {0:d})...".format(maxIter))
+        print("---------------------------------")
+    else:
+        suppress_mlab(mlab_kwargs)
+    
+    savemat('./temp.mat', mdict={'X': images_norm})
+    if(seed is None):
+        seed2 = -1
+    else:
+        seed2 = seed
+    k = len(np.unique(labels))
+    grps = eng.SSC_modified(k, 0, False, float(alpha), False, 1, 1e-20, maxIter, True, seed2, **mlab_kwargs)
+    labels_pred = np.asarray(grps, dtype=np.int32).flatten()
+
+    if(verbose):
+        print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
+
+    return evaluate(labels, labels_pred)
