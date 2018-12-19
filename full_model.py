@@ -173,6 +173,62 @@ def run_model(images_norm,
     # Evaluate
     return evaluate(labels, labels_pred)
 
+def run_ae(images_norm,
+           labels,
+           seed = None,
+           epochs_pretrain = 101,
+           epochs = 101,
+           lr_pretrain = 0.08,
+           lr = 0.006,
+           lambda1 = 0.0001,
+           lambda2 = 0.001,
+           alpha2 = 20,
+           maxIter2 = 16,
+           verbose = True):
+    # Hard-cast to avoid errors
+    maxIter2 = int(maxIter2)
+
+
+    # Train Autoencoder
+    mlab_kwargs = {}
+    if(verbose):
+        start_time = time.time()
+        print("\nTraining Autoencoder...")
+        print("-----------------------")
+    else:
+        suppress_mlab(mlab_kwargs)
+
+    d = dsc.DeepSubspaceClustering(images_norm, C=None, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
+                                   weight_init='sda-uniform', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
+                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
+    d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
+    images_HM2 = d.result
+
+    if(verbose):
+        print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+
+
+    # Cluster
+    # Matlab SSC #2
+        print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
+        print("---------------------------------")
+        start_time = time.time()
+    
+    savemat('./temp.mat', mdict={'X': images_HM2})
+    if(seed is None):
+        seed2 = -1
+    else:
+        seed2 = seed
+    k = len(np.unique(labels))
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, **mlab_kwargs)
+    labels_pred = np.asarray(grps, dtype=np.int32).flatten()
+
+    if(verbose):
+        print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
+
+    # Evaluate
+    return evaluate(labels, labels_pred)
+
 def run_ssc(images_norm,
             labels,
             seed = None,

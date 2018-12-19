@@ -36,7 +36,13 @@ class DeepSubspaceClustering:
         # This is not the symbolic variable of tensorflow, this is real!
         self.inputX = inputX
 
-        self.inputC = C
+        self.useSparce = not C is None
+        if self.useSparce:
+            self.inputC = C
+        else:
+            # not actually used anywhere
+            # initialized here to avoid breaking the tf pipeline
+            self.inputC = np.zeros((self.inputX.shape[0], self.inputX.shape[0]))
 
         self.C = tf.placeholder(dtype=tf.float32, shape=[None, None], name='C')
 
@@ -68,11 +74,13 @@ class DeepSubspaceClustering:
 
         J1 = tf.reduce_mean(tf.square(tf.subtract(self.X, self.H_M)))
 
-        # calculate loss J2
-        J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
-                                     tf.matmul(tf.transpose(self.H_M_2), self.C))))
+        self.cost = J1 + J3
 
-        self.cost = J1 + J2 + J3
+        # calculate loss J2
+        if self.useSparce:
+            J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
+                                        tf.matmul(tf.transpose(self.H_M_2), self.C))))
+            self.cost += J2
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
         self.optimizer = optimize(self.cost, learning_rate, optimizer, decay, self.global_step)
