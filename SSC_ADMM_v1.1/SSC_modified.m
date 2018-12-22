@@ -60,7 +60,11 @@ if (cluster)
     disp("Clustering...")
     CKSym = BuildAdjacency(thrC(C,rho));
     if (seed >= 0)
-        rng(seed);
+        if(isOctave)
+            rand('state', 0);
+	else
+            rng(seed);
+	end
     end
     grps = SpectralClustering(CKSym,k);
 end
