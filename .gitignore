@@ -9,10 +9,10 @@ cvxpy.egg-info
 # ADMM implementation of SSC in Matlab
 temp.mat
 SSC_ADMM_v1.1/*
-!/SSC_ADMM_v1.1/SSC_modified.m
+!/SSC_ADMM_v1.1/seed.txt
 !/SSC_ADMM_v1.1/performance.txt
+!/SSC_ADMM_v1.1/SSC_modified.m
 !/SSC_ADMM_v1.1/svdDriversCompare.m
-!/SCC_ADMM_v1.1/seed.txt
 
 # Octave and oct2py
 dir

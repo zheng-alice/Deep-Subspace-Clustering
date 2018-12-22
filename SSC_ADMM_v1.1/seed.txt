@@ -1,0 +1,95 @@
+YaleB
+full_model
+default parameters
+
+import matlab.engine
+import full_model
+from scipy.io import loadmat
+data_loaded = loadmat("./saved/processed/yaleB.mat")
+images_norm = data_loaded['X']
+labels = data_loaded['Y'].reshape(-1)
+full_model.run_model(images_norm, labels, seed=0)
+
+
+Python2.7 (beethoven)
+---------
+MATLAB:
+rng(seed) -> (0.9617021276595745, 0.9851113230275156, 0.9578386188385504)
+rand('state', double(seed)) -> (0.9557446808510638, 0.9857268051703395, 0.9545742493302461)
+rand('seed', double(seed)) -> (0.9578723404255319, 0.9881703081473203, 0.9584879360791595)
+rand('twister', double(seed)) -> (0.9625531914893617, 0.985314904831001, 0.9583452282183348)
+
+OCTAVE:
+rand('state', double(seed)) -> (0.7565957446808511, 0.9396104089401686, 0.7431185167029684)
+rand('seed', double(seed)) -> (0.7804255319148936, 0.9501673865250567, 0.7957022259908975)
+rand('twister', double(seed)) -> (0.7565957446808511, 0.9396104089401686, 0.7431185167029684)
+
+
+Python3.5 (local)
+---------
+MATLAB:
+rng(seed) -> (0.9617021276595745, 0.9851113230275155, 0.9578386188385504)
+rand('state', double(seed)) -> (0.9557446808510638, 0.9857268051703395, 0.9545742493302461)
+rand('seed', double(seed)) -> (0.9578723404255319, 0.9881703081473203, 0.9584879360791595)
+rand('twister', double(seed)) -> (0.9625531914893617, 0.9853149048310011, 0.9583452282183348)
+
+
+Python3.6 (duke)
+---------
+OCTAVE:
+rand('state', double(seed)) -> (0.9340425531914893, 0.9564622525591862, 0.8875247422239019)
+rand('seed', double(seed)) -> (0.9170212765957447, 0.9650483141255467, 0.8898373416302118)
+rand('twister', double(seed)) -> (0.9340425531914893, 0.9564622525591862, 0.8875247422239019)
+
+---------------------------------------------------------------------------------------------
+
+I realized that there were minor discrepancies in the model training, so I'm starting from a processed HM2 now
+temp.mat: Python3.5 -> final loss 0.002007222268730402
+
+import matlab.engine
+from full_model import *
+from scipy.io import loadmat
+data_loaded = loadmat("./saved/processed/yaleB.mat")
+labels = data_loaded['Y'].reshape(-1)
+grps = eng.SSC_modified(37, 0, False, 20.0, False, 1, 1e-20, 16, True, 0)
+labels_pred = np.asarray(grps, dtype=np.int32).flatten()
+print(1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred))
+
+
+Python2.7 (beethoven)
+---------
+MATLAB:
+rng(seed) -> (0.9617021276595745, 0.9851113230275156, 0.9578386188385504)
+rand('state', double(seed)) -> (0.9557446808510638, 0.9857268051703395, 0.9545742493302461)
+rand('seed', double(seed)) -> (0.9578723404255319, 0.9881703081473203, 0.9584879360791595)
+rand('twister', double(seed)) -> (0.9625531914893617, 0.985314904831001, 0.9583452282183348)
+
+OCTAVE:
+rand('state', double(seed)) -> (0.7565957446808511, 0.9396104089401686, 0.7431185167029684)
+rand('seed', double(seed)) -> (0.7804255319148936, 0.9501673865250567, 0.7957022259908975)
+rand('twister', double(seed)) -> (0.7565957446808511, 0.9396104089401686, 0.7431185167029684)
+
+
+Python3.5 (local)
+---------
+MATLAB:
+rng(seed) -> (0.9617021276595745, 0.9851113230275155, 0.9578386188385504)
+rand('state', double(seed)) -> (0.9557446808510638, 0.9857268051703395, 0.9545742493302461)
+rand('seed', double(seed)) -> (0.9578723404255319, 0.9881703081473203, 0.9584879360791595)
+rand('twister', double(seed)) -> (0.9625531914893617, 0.9853149048310011, 0.9583452282183348)
+
+
+Python3.6 (duke)
+---------
+OCTAVE:
+rand('state', double(seed)) -> (0.9340425531914893, 0.9564622525591862, 0.8875247422239019)
+rand('seed', double(seed)) -> (0.914468085106383, 0.9647781857159313, 0.8889889027627167)
+rand('twister', double(seed)) -> (0.9340425531914893, 0.9564622525591862, 0.8875247422239019)
+
+
+Conclusions:
+-Models run nearly identical between versions, differences come from SSC
+-For MATLAB, python versions don't make a difference
+-For Octave, 'state' and 'twister' are identical
+-Octave seems to consistently perform worse
+-There is no behavior in Octave that matches any from MATALB
