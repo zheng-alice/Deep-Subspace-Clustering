@@ -62,9 +62,9 @@ if (cluster)
     if (seed >= 0)
         if(isOctave)
             rand('state', 0);
-	else
+        else
             rng(seed);
-	end
+        end
     end
     grps = SpectralClustering(CKSym,k);
 end

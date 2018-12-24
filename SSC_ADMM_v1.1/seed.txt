@@ -92,4 +92,18 @@ Conclusions:
 -For MATLAB, python versions don't make a difference
 -For Octave, 'state' and 'twister' are identical
 -Octave seems to consistently perform worse
--There is no behavior in Octave that matches any from MATALB
+-There is no behavior in Octave that matches any from MATLAB
+
+
+Test2:
+To see whether Octave consistently performs worse than Matlab
+All runs are 'Re-evaluate same' from 3-Optimize, average of 5
+
+MATLAB: rng(seed), Python3.5 (0-3) / Python2.7 (4+)
+Octave: rand('state', seed), Python3.6
+
+	MATLAB		Octave
+0:	0.0076535819684	0.0722187204639
+1:	0.0028882901543	0.0265028885785
+2:	0.6898007867730	0.6787294428526
+3:	0.6779075600541 0.6633963435854
