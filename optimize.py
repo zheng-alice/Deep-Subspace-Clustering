@@ -78,19 +78,66 @@ def get_params(scenario):
     fixed_params['labels'] = data_loaded['Y'].reshape(-1)
     return fixed_params
 
-def opt_stats(res, start_time=None):
+def res_stats(result, start_time=None):
     print("------------------")
-    for i in range(10, len(res.func_vals)+1, 10):
-        print("{0:d}: {1:.4f}".format(i, min(res.func_vals[0:i])))
-    print("Best score: {0:.4f}".format(res.fun))
-    print("Best parameters: {0:}".format(res.x))
+    for i in range(10, len(result.func_vals)+1, 10):
+        print("{0:d}: {1:.4f}".format(i, min(result.func_vals[0:i])))
+    print("Best score: {0:.4f}".format(result.fun))
+    print("Best parameters: {0:}".format(result.x))
     if(start_time is not None):
         print("Total time elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
-def opt_plot(res):
+def res_plot(result):
     global show_plot
     if(show_plot):
-        return plot_convergence(res, yscale='log')
+        return plot_convergence(result, yscale='log')
+
+def res_optimum(result):
+    """ Extract the overall optimum from an optimization's surrogate model.
+
+        PARAMETERS
+        ----------
+        result [OptimizeResult]:
+            Result of the optimization, as returned by the optimization method.
+
+        RETURNS
+        -------
+        x_opt [list of double]:
+            The optimum hyperparameters, as predicted by the surrogate model.
+
+        y_opt [double]:
+            The corresponding predicted value.
+    """
+    X = result.space.rvs(result.specs['args']['n_points'], random_state=0)
+    Y = result.models[-1].predict(X)
+
+    min_idx = np.argmin(Y)
+    return X[min_idx], Y[min_idx]
+
+def res_optimum_mult(results):
+    """ Predict an overall optimum from a combination of
+        several optimization's surrogate models.
+
+        PARAMETERS
+        ----------
+        results [list of OptimizeResult]:
+            Results of several optimizations, as returned by the optimization method.
+
+        RETURNS
+        -------
+        x_opt [list of double]:
+            The optimum hyperparameters, as predicted by the surrogate models.
+
+        y_opt [double]:
+            The geometric mean corresponding predicted value.
+    """
+    X = results[0].space.rvs(results[0].specs['args']['n_points'], random_state=0)
+    Y_total = [1.0]*len(X)
+    for result in results:
+        Y_total *= result.models[-1].predict(X)
+
+    min_idx = np.argmin(Y_total)
+    return X[min_idx], Y_total[min_idx]**(1/len(results))
 
 def objective(hyper_params):
     global fixed_params_
@@ -156,8 +203,8 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
         RETURNS
         -------
         result [OptimizeResult]:
-            Result of the optimization, as returned by the optimization method
-            Can be saved through dump(), and resumed later through reload()
+            Result of the optimization, as returned by the optimization method.
+            Can be saved through dump(), and resumed later through reload().
     """
     start_time = time.time()
     
@@ -174,9 +221,9 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
         optfunc_params['n_jobs'] = -1
     result = function(objective, fixed_params['space'], **optfunc_params)
     if(verb):
-        opt_plot(result)
+        res_plot(result)
         print()
-    opt_stats(result, start_time)
+    res_stats(result, start_time)
     return result
 
 def func_new(hyper_params):
@@ -236,8 +283,8 @@ def reload(result, fixed_params, addtl_iters, random_seed=None, verb_model=False
         RETURNS
         -------
         result_new [OptimizeResult]:
-            The updated result of the optimization, as returned by the optimization method
-            Can be saved through dump(), and resumed once again
+            The updated result of the optimization, as returned by the optimization method.
+            Can be saved through dump(), and resumed once again.
     """
     start_time = time.time()
     
@@ -273,14 +320,15 @@ def reload(result, fixed_params, addtl_iters, random_seed=None, verb_model=False
     result_new.specs['args']['func'] = func_
     
     if(verb):
-        opt_plot(result_new)
+        res_plot(result_new)
         print()
-    opt_stats(result_new, start_time)
+    res_stats(result_new, start_time)
     return result_new
 
 
 def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_minimize, "dummy":dummy_minimize, "forest":forest_minimize, "gbrt":gbrt_minimize}, verb_model=False, verb=False):
-    """ Call optimize() across several functions and seeds
+    """ Call optimize() across several functions and seeds.
+        Automatically dump results.
 
         PARAMETERS
         ----------
@@ -313,7 +361,8 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(iterations) + ".opt")
 
 def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_names=["gp", "dummy", "forest", "gbrt"], verb_model=False, verb=False):
-    """ Call reload() across several functions and seeds
+    """ Call reload() across several functions and seeds.
+        Automatically dump results.
 
         PARAMETERS
         ----------
