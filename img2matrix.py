@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import dsift
-from scipy import misc
 
-
-def single_img2matrix(pgm_dir, k=4):
-    # k is the pooling size
+def read_image(pgm_dir):
     img = Image.open(pgm_dir)
-    # img.show()
-    data_mat = np.array(img)
+    image = np.array(img)
+    return image
+
+def single_img2matrix(image, k=4):
+    # k is the pooling size
     # We now do pooling and reshape
     shape = np.array(np.shape(data_mat)) / k
     shape = [int(i) for i in shape]
@@ -25,11 +25,9 @@ def single_img2matrix(pgm_dir, k=4):
     return new_data
 
 
-def single_img2dsift(pgm_dir):
-    image = misc.imread(pgm_dir)
+def single_img2dsift(image):
     # image = np.mean(np.double(image), axis=2) # convert RGB image into gray image
-    # MODIFICATION: number of patches independent of image size
-    # patchSize used to be hard-set to 12
+    # number of patches independent of image size, no longer hard-set to 12
     patchSize = max(image.shape) // 16
     extractor = dsift.DsiftExtractor(patchSize, patchSize, 1)
     feaArr, positions = extractor.process_image(image)
@@ -37,7 +35,7 @@ def single_img2dsift(pgm_dir):
     return feaArr
 
 
-def batch_convert_YaleB(img_path, truncate_num=30, images_per_person=None):
+def batch_load_YaleB(img_path, truncate_num=30, images_per_person=None):
     img_suffix = 'pgm'
     mat = []
     label = []
@@ -51,7 +49,7 @@ def batch_convert_YaleB(img_path, truncate_num=30, images_per_person=None):
         imgs = 0
         for file_name in file_names:
             if file_name.find(img_suffix) != -1 and file_name.find('Ambient') == -1 and file_name.find('.bad') == -1:
-                data_mat = single_img2dsift(os.path.join(img_path, all_dir, file_name))
+                data_mat = read_image(os.path.join(img_path, all_dir, file_name))
                 img_size = data_mat.shape
                 mat.append(data_mat)
                 label.append(i)
@@ -94,7 +92,7 @@ def batch_convert_YaleB(img_path, truncate_num=30, images_per_person=None):
 
 
 def main():
-    mat = batch_convert_YaleB()
+    mat = batch_load_YaleB()
     print(mat)
 
 

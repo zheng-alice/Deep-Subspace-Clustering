@@ -4,6 +4,7 @@ import os
 import supporting_files.sda as sda
 import time
 import sys
+from img2matrix import single_img2dsift
 from scipy.io import savemat, loadmat
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score as ari
@@ -46,9 +47,9 @@ else:
     raise RuntimeError("Unknown ENGINE_CHOICE: " + eng_name)
 
 #from load import load_YaleB
-#images_dsift, labels = load_YaleB()
-#savemat('./saved/raw/yaleB.mat', mdict={'X':images_dsift, 'Y':labels})
-#images_norm = preprocess(images_dsift)
+#images, labels = load_YaleB()
+#savemat('./saved/raw/yaleB.mat', mdict={'X':images, 'Y':labels})
+#images_norm = preprocess(images)
 #savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
 
 #from scipy.io import loadmat
@@ -57,7 +58,16 @@ else:
 #labels = data_loaded['Y'].reshape(-1)
 #run_model(images_norm, labels)
 
-def preprocess(images_dsift):
+def preprocess(images):
+    print("\nRunning DSIFT...")
+    print("----------------")
+    start_time = time.time()
+
+    images_dsift = [single_img2dsift(image) for image in images]
+
+    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+
+
     print("\nPerforming PCA...")
     print("-----------------")
     start_time = time.time()

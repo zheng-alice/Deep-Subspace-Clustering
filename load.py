@@ -8,7 +8,7 @@ def load_YaleB(path="./data/CroppedYale"):
     print("----------------")
     start_time = time.time()
 
-    train, test, img_size = img2matrix.batch_convert_YaleB(path, truncate_num=38, images_per_person=None)
+    train, test, img_size = img2matrix.batch_load_YaleB(path, truncate_num=38, images_per_person=None)
     images = train[0]
     labels = train[1]
 
@@ -34,7 +34,7 @@ def load_Coil20(path="./data/coil-20-proc"):
         except ValueError:
             continue
             
-        images.append(img2matrix.single_img2dsift(img))
+        images.append(img2matrix.read_image(img))
         labels.append(label)
 
     images = np.array(images)
