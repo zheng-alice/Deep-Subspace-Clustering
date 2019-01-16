@@ -5,6 +5,9 @@ import os
 from supporting_files.nncomponents import *
 from supporting_files.helpers import *
 
+import importlib
+importlib.reload(supporting_files.sda)
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # print any active GPUs
@@ -13,7 +16,7 @@ sess.close()
 
 class DeepSubspaceClustering:
 
-    def __init__(self, inputX, C=None, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
+    def __init__(self, inputX, C=None, trainC=False, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
                  weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
                  sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
         tf.reset_default_graph()
@@ -36,13 +39,12 @@ class DeepSubspaceClustering:
         # This is not the symbolic variable of tensorflow, this is real!
         self.inputX = inputX
 
-        self.useSparce = not C is None
-        if self.useSparce:
+        self.givenC = not C is None
+        self.trainC = trainC
+        if self.givenC:
             self.inputC = C
         else:
-            # not actually used anywhere
-            # initialized here to avoid breaking the tf pipeline
-            self.inputC = np.zeros((self.inputX.shape[0], self.inputX.shape[0]))
+            self.inputC = np.random.normal(0.0, 1.0, (self.inputX.shape[0], self.inputX.shape[0])) / np.sqrt(self.inputX.shape[0])
 
         self.C = tf.placeholder(dtype=tf.float32, shape=[None, None], name='C')
 
@@ -77,9 +79,13 @@ class DeepSubspaceClustering:
         self.cost = J1 + J3
 
         # calculate loss J2
-        if self.useSparce:
-            J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
-                                        tf.matmul(tf.transpose(self.H_M_2), self.C))))
+        if self.givenC or self.trainC:
+            if self.trainC:
+                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
+                                            tf.matmul(tf.transpose(self.H_M_2), self.C))))
+            else:
+                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
+                                            tf.matmul(tf.transpose(self.H_M_2), self.C))))
             self.cost += J2
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
@@ -89,6 +95,10 @@ class DeepSubspaceClustering:
         weights, biases = [], []
         if name == 'sda-uniform':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay, self.verbose)
+            sda._fit(self.inputX)
+            weights, biases = sda.weights, sda.biases
+        if name == 'sda-normal':
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'normal', sda_optimizer, sda_decay, self.verbose)
             sda._fit(self.inputX)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':

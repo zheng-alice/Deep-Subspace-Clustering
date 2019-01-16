@@ -99,7 +99,7 @@ Test2:
 To see whether Octave consistently performs worse than Matlab
 All runs are 'Re-evaluate same' from 3-Optimize, average of 5
 
-MATLAB: rng(seed), Python3.5 (0-3) / Python2.7 (4+)
+MATLAB: rng(seed), Python3.5
 Octave: rand('state', seed), Python3.6
 
 	MATLAB		Octave

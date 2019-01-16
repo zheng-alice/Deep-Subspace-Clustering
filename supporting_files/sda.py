@@ -80,6 +80,12 @@ class StackedDenoisingAutoencoder:
                       'biases': tf.Variable(tf.zeros([hidden_dim], dtype=tf.float32))}
             decode = {'biases': tf.Variable(tf.zeros([input_dim], dtype=tf.float32)),
                       'weights': tf.Variable(tf.transpose(encode['weights'].initialized_value()))}
+        elif weight_init == 'normal':
+            r = np.sqrt(2.0/(input_dim+hidden_dim))
+            encode = {'weights': tf.Variable(tf.random_normal([input_dim, hidden_dim], mean=0.0, stddev=r, dtype=tf.float32)),
+                      'biases': tf.Variable(tf.zeros([hidden_dim], dtype=tf.float32))}
+            decode = {'biases': tf.Variable(tf.zeros([input_dim], dtype=tf.float32)),
+                      'weights': tf.Variable(tf.transpose(encode['weights'].initialized_value()))}
         elif weight_init == 'default':
             encode = {'weights': tf.Variable(tf.truncated_normal([input_dim, hidden_dim], dtype=tf.float32)),
                       'biases': tf.Variable(tf.truncated_normal([hidden_dim], dtype=tf.float32))}
