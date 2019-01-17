@@ -16,7 +16,7 @@ sess.close()
 
 class DeepSubspaceClustering:
 
-    def __init__(self, inputX, C=None, trainC=False, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, activation='tanh', \
+    def __init__(self, inputX, C=None, trainC=False, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, lambda3=0.0, activation='tanh', \
                  weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
                  sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
         tf.reset_default_graph()
@@ -44,9 +44,11 @@ class DeepSubspaceClustering:
         if self.givenC:
             self.inputC = C
         else:
-            self.inputC = np.random.normal(0.0, 1.0, (self.inputX.shape[0], self.inputX.shape[0])) / np.sqrt(self.inputX.shape[0])
+            self.inputC = np.random.normal(0.0, np.sqrt(1.0 / self.inputX.shape[0]), (self.inputX.shape[0], self.inputX.shape[0]))
+            self.inputC -= np.diag(np.diag(self.inputC))
 
         self.C = tf.placeholder(dtype=tf.float32, shape=[None, None], name='C')
+        self.trainedC = tf.matrix_set_diag(tf.Variable(self.inputC, dtype=tf.float32), tf.zeros(self.inputX.shape[0]))
 
         self.hidden_layers = []
         self.X = self._add_noise(tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='X'))
@@ -59,7 +61,16 @@ class DeepSubspaceClustering:
 
         # J3 regularization term
         J3_list = []
-        for init_w, init_b in zip(weights, biases):
+        for init_w, init_b in zip(weights[0:len(weights)//2], biases[0:len(weights)//2]):
+            self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
+            input_hidden = self.hidden_layers[-1].output
+            J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].w)))
+            J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].b)))
+        #self-expressive layer
+        if(self.trainC):
+            input_hidden = tf.matmul(self.trainedC, input_hidden)
+            self.H_M_2_post = input_hidden
+        for init_w, init_b in zip(weights[len(weights)//2:], biases[len(weights)//2:]):
             self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
             input_hidden = self.hidden_layers[-1].output
             J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].w)))
@@ -81,8 +92,8 @@ class DeepSubspaceClustering:
         # calculate loss J2
         if self.givenC or self.trainC:
             if self.trainC:
-                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
-                                            tf.matmul(tf.transpose(self.H_M_2), self.C))))
+                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(self.H_M_2, self.H_M_2_post)))
+                self.cost += lambda3 * tf.reduce_mean(tf.square(self.trainedC))
             else:
                 J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
                                             tf.matmul(tf.transpose(self.H_M_2), self.C))))
@@ -130,6 +141,7 @@ class DeepSubspaceClustering:
             for j in range(int(n_batch+1)):
                 x_batch, c_batch = batch_generator.get_batch()
                 out=sess.run(self.optimizer, feed_dict={self.X: x_batch, self.C: c_batch})
+                self.inputC -= np.diag(np.diag(self.inputC))
 
             self.losses.append(sess.run(self.cost, feed_dict={self.X: x_batch, self.C: c_batch}))
 
@@ -142,7 +154,7 @@ class DeepSubspaceClustering:
         #     if i % print_step == 0:
         #         print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
-        self.result, self.reconstr = sess.run([self.H_M_2, self.H_M], feed_dict={self.X: x_batch, self.C: c_batch})
+        self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.trainedC], feed_dict={self.X: x_batch, self.C: c_batch})
 
 
     def _add_noise(self, x):
