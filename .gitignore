@@ -26,6 +26,3 @@ data
 
 # Saved matrices for faster loading
 saved/raw
-
-# Optimization results
-optims

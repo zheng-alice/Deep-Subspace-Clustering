@@ -6,6 +6,8 @@ import sys
 import warnings
 from copy import copy, deepcopy
 from params import all_params
+from pathlib import Path
+from pympler.asizeof import asizeof
 from scipy.io import savemat, loadmat
 from sklearn.utils import check_random_state
 from skopt import dump, load
@@ -15,6 +17,7 @@ from skopt.optimizer import base_minimize
 from skopt.plots import plot_convergence
 from skopt.utils import use_named_args
 
+
 show_plot = False
 
 def get_params(scenario):
@@ -23,6 +26,24 @@ def get_params(scenario):
     fixed_params['images_norm'] = data_loaded['X']
     fixed_params['labels'] = data_loaded['Y'].reshape(-1)
     return fixed_params
+
+def reduce(result):
+    """ Save space by getting rid of all models except the last. """
+    del result.models[:-1]
+
+def reduce_all(directory="./optims"):
+    """ Reduce all .opt files in directory. """
+    path = Path(directory)
+
+    for resultpath in path.glob("**/*.opt"):
+        result = load(resultpath)
+        
+        oldsize = asizeof(result)
+        reduce(result)
+        newsize = asizeof(result)
+        
+        dump(result, resultpath)
+        print("Reduced", resultpath, "by", str(int((oldsize-newsize)/oldsize*100))+"%,", "from", oldsize, "to", newsize)
 
 def res_stats(result, start_time=None):
     print("------------------")
@@ -103,7 +124,8 @@ def objective(hyper_params):
             return 1
     return internal(hyper_params)
 
-def flush(x):
+def callback(result):
+    reduce(result)
     sys.stdout.flush()
 
 def optimize(function, fixed_params, iterations, random_seed=None, verb_model=False, verb=True):
@@ -165,7 +187,7 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
     verb_model_ = verb_model
     
     # kwargs b/c dummy_minimize can not take n_jobs
-    optfunc_params = {'n_calls':iterations, 'random_state':random_seed, 'verbose':verb, 'callback':flush}
+    optfunc_params = {'n_calls':iterations, 'random_state':random_seed, 'verbose':verb, 'callback':callback}
     if(function != dummy_minimize):
         optfunc_params['n_random_starts'] = fixed_params['n_rand']
         optfunc_params['n_jobs'] = -1
