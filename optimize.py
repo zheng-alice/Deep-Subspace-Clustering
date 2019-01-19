@@ -4,7 +4,7 @@ import os
 import time
 import warnings
 from copy import copy, deepcopy
-from full_model import run_model, run_ae, run_ssc
+from params import all_params
 from scipy.io import savemat, loadmat
 from sklearn.utils import check_random_state
 from skopt import dump, load
@@ -12,64 +12,9 @@ from skopt import gp_minimize, dummy_minimize, forest_minimize, gbrt_minimize
 from skopt.learning import GaussianProcessRegressor
 from skopt.optimizer import base_minimize
 from skopt.plots import plot_convergence
-from skopt.space import Integer, Real
 from skopt.utils import use_named_args
 
 show_plot = False
-all_params = [
-    # 0
-    {'model':run_model, 'dataset':'yaleB', 'n_rand':10, 'epochs_pretrain':201 , 'epochs':101, 'space':
-         [Real(10**-2, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-3, 10**-1, "log-uniform", name='lr'),
-          Real(10**0, 10**2, "log-uniform", name='alpha1'),
-          Integer(2, 32, name='maxIter1'),
-          Real(10**0, 10**2, "log-uniform", name='alpha2'),
-          Integer(2, 32, name='maxIter2')]},
-    {'model':run_model, 'dataset':'yaleB', 'n_rand':10, 'epochs_pretrain':201 , 'epochs':101, 'space':
-         [Real(10**-2, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-3, 10**-1, "log-uniform", name='lr'),
-          Real(10**0, 10**2, "log-uniform", name='alpha1'),
-          Integer(10, 32, name='maxIter1'),
-          Real(10**0, 10**2, "log-uniform", name='alpha2'),
-          Integer(10, 32, name='maxIter2')]},
-    {'model':run_model, 'dataset':'Coil20', 'n_rand':10, 'epochs_pretrain':201 , 'epochs':101, 'space':
-         [Real(10**-4, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-5, 10**-1, "log-uniform", name='lr'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha1'),
-          Integer(10, 100, name='maxIter1'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha2'),
-          Integer(10, 100, name='maxIter2')]},
-    {'model':run_model, 'dataset':'Coil20', 'n_rand':10, 'epochs_pretrain':1001 , 'epochs':251, 'space':
-         [Real(10**-4, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-5, 10**-1, "log-uniform", name='lr'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha1'),
-          Integer(10, 200, name='maxIter1'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha2'),
-          Integer(10, 200, name='maxIter2')]},
-    {'model':run_model, 'dataset':'Coil20', 'n_rand':50, 'epochs_pretrain':1001 , 'epochs':251, 'space':
-         [Real(10**-4, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-5, 10**-1, "log-uniform", name='lr'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha1'),
-          Integer(10, 200, name='maxIter1'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha2'),
-          Integer(10, 200, name='maxIter2')]},
-    # 5
-    {'model':run_ssc, 'dataset':'yaleB', 'n_rand':10, 'space':
-         [Real(10**-1, 10**3, "log-uniform", name='alpha'),
-          Integer(10, 200, name='maxIter')]},
-    {'model':run_ssc, 'dataset':'Coil20', 'n_rand':10, 'space':
-         [Real(10**-1, 10**3, "log-uniform", name='alpha'),
-          Integer(10, 200, name='maxIter')]},
-    {'model':run_ae, 'dataset':'yaleB', 'n_rand':10, 'epochs_pretrain':201 , 'epochs':101, 'space':
-         [Real(10**-2, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-3, 10**-1, "log-uniform", name='lr'),
-          Real(10**0, 10**2, "log-uniform", name='alpha2'),
-          Integer(10, 32, name='maxIter2')]},
-    {'model':run_ae, 'dataset':'Coil20', 'n_rand':10, 'epochs_pretrain':1001 , 'epochs':251, 'space':
-         [Real(10**-4, 10**0, "log-uniform", name='lr_pretrain'),
-          Real(10**-5, 10**-1, "log-uniform", name='lr'),
-          Real(10**-1, 10**3, "log-uniform", name='alpha2'),
-          Integer(10, 200, name='maxIter2')]}]
 
 def get_params(scenario):
     fixed_params = copy(all_params[scenario])

@@ -10,8 +10,11 @@
 % Copyright @ Ehsan Elhamifar, 2012
 %--------------------------------------------------------------------------
 
-function [grps] = SSC_modified(k,r,affine,alpha,outlier,rho,thr,maxIter,cluster,seed)
+function [grps] = SSC_modified(k,r,affine,alpha,outlier,rho,thr,maxIter,cluster,seed,givenC)
 
+if (nargin < 11)
+    givenC = false;
+end
 if (nargin < 10)
     seed = -1;
 end
@@ -42,17 +45,21 @@ end
 
 %still the fastest way to pass large ndarrays
 %the alternative takes 37 seconds per (2350x300) array
-load ./../temp.mat X;
-X = double(X.');
-Xp = DataProjection(X,r);
-
-if (~outlier)
-    CMat = admmLasso_mat_func(Xp,affine,alpha,thr,maxIter);
-    C = CMat;
+if (givenC)
+    load ./../temp.mat C;
 else
-    CMat = admmOutlier_mat_func(Xp,affine,alpha,thr,maxIter);
-    N = size(Xp,2);
-    C = CMat(1:N,:);
+    load ./../temp.mat X;
+    X = double(X.');
+    Xp = DataProjection(X,r);
+    
+    if (~outlier)
+        CMat = admmLasso_mat_func(Xp,affine,alpha,thr,maxIter);
+        C = CMat;
+    else
+        CMat = admmOutlier_mat_func(Xp,affine,alpha,thr,maxIter);
+        N = size(Xp,2);
+        C = CMat(1:N,:);
+    end
 end
 
 grps = [];

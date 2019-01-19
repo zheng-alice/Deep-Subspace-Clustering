@@ -121,8 +121,11 @@ def run_model(images_norm,
               maxIter1 = 6,
               lambda1 = 0.0001,
               lambda2 = 0.001,
+              lambda3 = 0.0,
               alpha2 = 20,
               maxIter2 = 16,
+              trainC = False,
+              giveC = False,
               verbose = True):
     # Hard-cast to avoid errors
     maxIter1 = int(maxIter1)
@@ -132,34 +135,39 @@ def run_model(images_norm,
     # Calculate C matrix
     # Matlab SSC #1
     mlab_kwargs = {}
-    if(verbose):
-        start_time = time.time()
-        print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
-        print("-------------------------------------")
-    else:
+    if(not verbose):
         suppress_mlab(mlab_kwargs)
-
-    savemat('./temp.mat', mdict={'X': images_norm})
     if(seed is None):
         seed2 = -1
     else:
         seed2 = seed
     k = len(np.unique(labels))
-    eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2, **mlab_kwargs)
-    C = loadmat("./temp.mat")['C']
+    C=None
+    if((not trainC) or giveC):
+        if(verbose):
+            start_time = time.time()
+            print("\nFinding affinity matrix (iter: {0:d})...".format(maxIter1))
+            print("-------------------------------------")
 
-    if(verbose):
-        print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+        savemat('./temp.mat', mdict={'X': images_norm})
+        eng.SSC_modified(k, 0, False, float(alpha1), False, 1, 1e-20, maxIter1, False, seed2, False, **mlab_kwargs)
+        C = loadmat("./temp.mat")['C']
+
+        if(verbose):
+            print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
 
     # Train Autoencoder
+    if(verbose):
         start_time = time.time()
         print("\nTraining Autoencoder...")
         print("-----------------------")
 
-    d = dsc.DeepSubspaceClustering(images_norm, C=C, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
-                                   weight_init='sda-normal', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
-                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
+    d = dsc.DeepSubspaceClustering(images_norm, C=C, trainC=trainC, hidden_dims=[200, 150, 200], lambda1=lambda1,
+                                   lambda2=lambda2, lambda3=lambda3, learning_rate=lr, weight_init='sda-normal',
+                                   weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
+                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt',
+                                   seed=seed, verbose=verbose)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
     images_HM2 = d.result
 
@@ -173,8 +181,11 @@ def run_model(images_norm,
         print("---------------------------------")
         start_time = time.time()
     
-    savemat('./temp.mat', mdict={'X': images_HM2})
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, **mlab_kwargs)
+    if(trainC):
+        savemat('./temp.mat', mdict={'C': np.float64(d.outC)})
+    else:
+        savemat('./temp.mat', mdict={'X': images_HM2})
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, trainC, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     if(verbose):
@@ -190,7 +201,6 @@ def run_ae(images_norm,
            epochs = 101,
            lr_pretrain = 0.08,
            lr = 0.006,
-           lambda1 = 0.0001,
            lambda2 = 0.001,
            alpha2 = 20,
            maxIter2 = 16,
@@ -208,7 +218,7 @@ def run_ae(images_norm,
     else:
         suppress_mlab(mlab_kwargs)
 
-    d = dsc.DeepSubspaceClustering(images_norm, C=None, hidden_dims=[200, 150, 200], lambda1=lambda1, lambda2=lambda2, learning_rate=lr,
+    d = dsc.DeepSubspaceClustering(images_norm, C=None, trainC=False, hidden_dims=[200, 150, 200], lambda2=lambda2, learning_rate=lr,
                                    weight_init='sda-normal', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
                                    optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
@@ -230,7 +240,7 @@ def run_ae(images_norm,
     else:
         seed2 = seed
     k = len(np.unique(labels))
-    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, **mlab_kwargs)
+    grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, False, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     if(verbose):
@@ -265,7 +275,7 @@ def run_ssc(images_norm,
     else:
         seed2 = seed
     k = len(np.unique(labels))
-    grps = eng.SSC_modified(k, 0, False, float(alpha), False, 1, 1e-20, maxIter, True, seed2, **mlab_kwargs)
+    grps = eng.SSC_modified(k, 0, False, float(alpha), False, 1, 1e-20, maxIter, True, seed2, False, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
     if(verbose):
