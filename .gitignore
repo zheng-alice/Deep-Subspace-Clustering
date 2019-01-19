@@ -5,6 +5,7 @@ cvxpy.egg-info
 *.pyc
 .DS_Store
 Thumbs.db
+nohup.out
 ~$*
 
 # ADMM implementation of SSC in Matlab

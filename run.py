@@ -1,3 +1,4 @@
+import matlab.engine
 from optimize import *
 
 for seed in range(9, 14):

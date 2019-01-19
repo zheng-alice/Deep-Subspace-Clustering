@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import time
+import sys
 import warnings
 from copy import copy, deepcopy
 from params import all_params
@@ -98,8 +99,12 @@ def objective(hyper_params):
             if(type(ex) == KeyError):
                 raise ex
             print("Caught a " + type(ex).__name__ + ". Returning 1.0")
+            print(ex)
             return 1
     return internal(hyper_params)
+
+def flush(x):
+    sys.stdout.flush()
 
 def optimize(function, fixed_params, iterations, random_seed=None, verb_model=False, verb=True):
     """ Find optimum hyperparameters by repeatedly training the model from scratch.
@@ -160,7 +165,7 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
     verb_model_ = verb_model
     
     # kwargs b/c dummy_minimize can not take n_jobs
-    optfunc_params = {'n_calls':iterations, 'random_state':random_seed, 'verbose':verb}
+    optfunc_params = {'n_calls':iterations, 'random_state':random_seed, 'verbose':verb, 'callback':flush}
     if(function != dummy_minimize):
         optfunc_params['n_random_starts'] = fixed_params['n_rand']
         optfunc_params['n_jobs'] = -1

@@ -5,8 +5,6 @@ import os
 from supporting_files.nncomponents import *
 from supporting_files.helpers import *
 
-import importlib
-importlib.reload(supporting_files.sda)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
