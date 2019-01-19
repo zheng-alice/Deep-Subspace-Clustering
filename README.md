@@ -94,6 +94,7 @@ Through ```pip``` or ```conda```, install the following:
 * scipy
 * matplotlib
 * pympler
+* pathlib
 
 ### SSC using ADMM
 Download code for [SSC using ADMM](http://vision.jhu.edu/code/). Unzip the contents into ```SSC_ADMM_v1.1```, located at the root of the repository.
