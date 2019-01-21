@@ -88,7 +88,7 @@ octave:3> kmeans(randn(10, 2), 2)
 
 ### Packages
 Through ```pip``` or ```conda```, install the following:
-* sklearn
+* scikit-learn
 * scikit-optimize
 * munkres
 * scipy
