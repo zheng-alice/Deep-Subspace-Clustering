@@ -52,7 +52,7 @@ def reduce_all(directory="./optims"):
             print("Could not save "+resultpath.parent.name+"/"+resultpath.name)
         print("Reduced "+resultpath.parent.name+"/"+resultpath.name+" by "+str((oldsize-newsize)*100/oldsize)+"%, from "+str(oldsize)+" to "+str(newsize))
 
-def res_stats(resulti, start_time=None):
+def res_stats(result, start_time=None):
     print("---------------")
     for i in range(10, len(result.func_vals)+1, 10):
         print("{0:d}: {1:.4f}".format(i, min(result.func_vals[0:i])))
