@@ -46,7 +46,7 @@ def reduce_all(directory="./optims"):
         reduce(result)
         newsize = asizeof(result)
         
-	try:
+        try:
             dump(result, resultpath)
         except:
             print("Could not save "+resultpath.parent.name+"/"+resultpath.name)
