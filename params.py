@@ -98,8 +98,8 @@ all_params = [
         Real(10**0, 10**4, "log-uniform", name='alpha2'),
         Integer(2, 200, name='maxIter2')]},
   {'model':run_ssc, 'dataset':'Coil20', 'n_rand':40, 'space':
-       [Real(10**0, 10**4, "log-uniform", name='alpha'),
-        Integer(2, 200, name='maxIter')]},
+       [Real(0.021193, 52.9834, "log-uniform", name='alpha'),
+        Integer(2, 25, name='maxIter')]},
   # 15
   {'model':run_ae, 'dataset':'Coil20', 'n_rand':40, 'epochs_pretrain':4000, 'epochs':1000, 'space':
        [Real(10**-6, 10**-2, "log-uniform", name='lr_pretrain'),
@@ -140,8 +140,8 @@ all_params = [
         Real(10**0, 10**4, "log-uniform", name='alpha2'),
         Integer(2, 200, name='maxIter2')]},
   {'model':run_ssc, 'dataset':'Coil20', 'n_rand':10, 'space':
-       [Real(10**0, 10**4, "log-uniform", name='alpha'),
-        Integer(2, 200, name='maxIter')]},
+       [Real(0.036796, 22.99753, "log-uniform", name='alpha'),
+        Integer(8, 48, name='maxIter')]},
   # 20
   {'model':run_ae, 'dataset':'Coil20', 'n_rand':10, 'epochs_pretrain':16000, 'epochs':4000, 'space':
        [Real(10**-6, 10**-2, "log-uniform", name='lr_pretrain'),

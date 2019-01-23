@@ -36,17 +36,24 @@ def reduce_all(directory="./optims"):
     path = Path(directory)
 
     for resultpath in path.glob("**/*.opt"):
-        result = load(resultpath)
+        try:
+            result = load(resultpath)
+        except:
+            print("Could not load "+resultpath.parent.name+"/"+resultpath.name)
+            continue
         
         oldsize = asizeof(result)
         reduce(result)
         newsize = asizeof(result)
         
-        dump(result, resultpath)
-        print("Reduced", resultpath, "by", str(int((oldsize-newsize)/oldsize*100))+"%,", "from", oldsize, "to", newsize)
+        try:
+            dump(result, resultpath)
+        except:
+            print("Could not save "+resultpath.parent.name+"/"+resultpath.name)
+        print("Reduced "+resultpath.parent.name+"/"+resultpath.name+" by "+str((oldsize-newsize)*100/oldsize)+"%, from "+str(oldsize)+" to "+str(newsize))
 
 def res_stats(result, start_time=None):
-    print("------------------")
+    print("---------------")
     for i in range(10, len(result.func_vals)+1, 10):
         print("{0:d}: {1:.4f}".format(i, min(result.func_vals[0:i])))
     print("Best score: {0:.4f}".format(result.fun))
