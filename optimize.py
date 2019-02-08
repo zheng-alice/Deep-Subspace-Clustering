@@ -83,7 +83,7 @@ def res_optimum(result):
             The corresponding predicted value.
     """
     X = result.space.rvs(result.specs['args']['n_points'], random_state=0)
-    Y = result.models[-1].predict(X)
+    Y = result.models[-1].predict(result.space.transform(X))
 
     min_idx = np.argmin(Y)
     return X[min_idx], Y[min_idx]
@@ -108,7 +108,7 @@ def res_optimum_mult(results):
     X = results[0].space.rvs(results[0].specs['args']['n_points'], random_state=0)
     Y_total = [1.0]*len(X)
     for result in results:
-        Y_total *= result.models[-1].predict(X)
+        Y_total *= result.models[-1].predict(result.space.transform(X))
 
     min_idx = np.argmin(Y_total)
     return X[min_idx], Y_total[min_idx]**(1/len(results))

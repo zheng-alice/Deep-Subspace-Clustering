@@ -3,6 +3,7 @@ __pycache__
 cvxpy.egg-info
 .vscode
 *.pyc
+*.asv
 .DS_Store
 Thumbs.db
 nohup.out
@@ -26,3 +27,4 @@ data
 
 # Saved matrices for faster loading
 saved/raw
+figures/hyper_opt.mat
