@@ -122,7 +122,7 @@ def objective(hyper_params):
         global seed_, verb_model_
         try:
             fixed_params_copy.update(hyper_params)
-            return 1-fixed_params_copy.pop('model')(seed=seed_, verbose=verb_model_, **fixed_params_copy)[0]
+            return fixed_params_copy.pop('model')(seed=seed_, verbose=verb_model_, **fixed_params_copy)[0]
         except Exception as ex:
             if(type(ex) == KeyError):
                 raise ex

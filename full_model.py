@@ -107,8 +107,8 @@ def suppress_mlab(mlab_kwargs):
 
 def evaluate(labels, labels_pred):
     # Compare predicted labels to known ground-truths
-    # Returns accuracy, NMI, ARI
-    return 1-err_rate(labels, labels_pred), nmi(labels, labels_pred, average_method="geometric"), ari(labels, labels_pred)
+    # Returns error rate, 1-NMI, 1-ARI
+    return err_rate(labels, labels_pred), 1-nmi(labels, labels_pred, average_method="geometric"), 1-ari(labels, labels_pred)
 
 def run_model(images_norm,
               labels,
