@@ -1,11 +1,14 @@
 load hyper_opt.mat;
 axxes = containers.Map(fieldnames(axxes), struct2cell(axxes));
 
+idx_x = 1;
+idx_y = 2;
 if axxes.Count < 2
     error("Data has too few dimensions: " + axxes.Count);
 end
-idx_x = 1;
-idx_y = 2;
+if idx_x == idx_y
+    error("Visualized dimension indices must differ");
+end
 
 
 M = size(truth.y, 1);
@@ -30,25 +33,25 @@ plane = 1:size(hidden, 2);
 range = 1:size(hidden, 2);
 values = truth.x(:, hidden);
 for i = plane
-    axis = axxes(deblank(truth.names(i, :)));
+    axis = axxes(deblank(truth.names(hidden(i), :)));
     plane(i) = axis(slice{hidden(i)});
     range(i) = axis(size(axis, 1));
-    if strcmp(deblank(truth.priors(i, :)), 'log')
+    if strcmp(deblank(truth.priors(hidden(i), :)), 'log')
        plane(i) = log10(plane(i));
        range(i) = log10(range(i)) - log10(axis(1));
-       values(:, i) = log10(values(:, 1));
+       values(:, i) = log10(values(:, i));
     else
        range(i) = range(i) - axis(1);
     end
 end
 dist = sqrt(sum(((values - plane)./ range).^2, 2));
-s = s.* (1.- (dist./sqrt(max(1, size(hidden, 2)))));
+s = s.* 10.^ -dist;
 plot_truth = scatter3(truth.x(:, idx_x), truth.x(:, idx_y), truth.y, s, c, 'filled');
 
 hold on;
 
-means = surrogate.mean(slice{:});
-stds = surrogate.std(slice{:});
+means = squeeze(surrogate.mean(slice{:}));
+stds = squeeze(surrogate.std(slice{:}));
 if idx_x < idx_y
     means = means.';
     stds = stds.';
