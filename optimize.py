@@ -21,11 +21,11 @@ from skopt.utils import use_named_args
 show_plot = False
 
 def get_params(scenario):
-    fixed_params = copy(all_params[scenario])
-    data_loaded = loadmat("./saved/processed/" + fixed_params.pop('dataset'))
-    fixed_params['images_norm'] = data_loaded['X']
-    fixed_params['labels'] = data_loaded['Y'].reshape(-1)
-    return fixed_params
+    opt_params = copy(all_params[scenario])
+    data_loaded = loadmat("./saved/processed/" + opt_params.pop('dataset'))
+    opt_params['images_norm'] = data_loaded['X']
+    opt_params['labels'] = data_loaded['Y'].reshape(-1)
+    return opt_params
 
 def reduce(result):
     """ Save space by getting rid of all models except the last. """
@@ -114,15 +114,15 @@ def res_optimum_mult(results):
     return X[min_idx], Y_total[min_idx]**(1/len(results))
 
 def objective(hyper_params):
-    global fixed_params_
-    fixed_params_copy = copy(fixed_params_)
-    fixed_params_copy.pop('n_rand')
-    @use_named_args(fixed_params_copy.pop('space'))
+    global opt_params_
+    all_params = copy(opt_params_)
+    all_params.pop('n_rand')
+    @use_named_args(all_params.pop('space'))
     def internal(**hyper_params):
         global seed_, verb_model_
         try:
-            fixed_params_copy.update(hyper_params)
-            return fixed_params_copy.pop('model')(seed=seed_, verbose=verb_model_, **fixed_params_copy)[0]
+            all_params.update(hyper_params)
+            return all_params.pop('model')(seed=seed_, verbose=verb_model_, **all_params)[0]
         except Exception as ex:
             if(type(ex) == KeyError):
                 raise ex
@@ -135,7 +135,7 @@ def callback(result):
     reduce(result)
     sys.stdout.flush()
 
-def optimize(function, fixed_params, iterations, random_seed=None, verb_model=False, verb=True):
+def optimize(function, opt_params, iterations, random_seed=None, verb_model=False, verb=True):
     """ Find optimum hyperparameters by repeatedly training the model from scratch.
 
         PARAMETERS
@@ -148,8 +148,9 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
                 skopt.forest_minimize
                 skopt.gbrt_minimize
 
-        fixed_params [dict of str:callable]:
+        opt_params [dict of str:callable]:
             Parameters that define the optimization.
+            Includes both fixed parameters and hyperparameters (as space).
             Examples can be retrieved from get_params().
 
             model [callable]:
@@ -188,17 +189,17 @@ def optimize(function, fixed_params, iterations, random_seed=None, verb_model=Fa
     start_time = time.time()
     
     # global b/c I couldn't find a better way to directly pass these to the objective function
-    global fixed_params_, seed_, verb_model_
-    fixed_params_ = fixed_params
+    global opt_params_, seed_, verb_model_
+    opt_params_ = opt_params
     seed_ = random_seed
     verb_model_ = verb_model
     
     # kwargs b/c dummy_minimize can not take n_jobs
     optfunc_params = {'n_calls':iterations, 'random_state':random_seed, 'verbose':verb, 'callback':callback}
     if(function != dummy_minimize):
-        optfunc_params['n_random_starts'] = fixed_params['n_rand']
+        optfunc_params['n_random_starts'] = opt_params['n_rand']
         optfunc_params['n_jobs'] = -1
-    result = function(objective, fixed_params['space'], **optfunc_params)
+    result = function(objective, opt_params['space'], **optfunc_params)
     if(verb):
         res_plot(result)
         print()
@@ -215,7 +216,7 @@ def func_new(hyper_params):
             return y
     return func_(hyper_params)
 
-def reload(result, fixed_params, addtl_iters, random_seed=None, verb_model=False, verb=True):
+def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, verb=True):
     """ Resume a previous optimization.
 
         PARAMETERS
@@ -228,8 +229,9 @@ def reload(result, fixed_params, addtl_iters, random_seed=None, verb_model=False
                 skopt.forest_minimize
                 skopt.gbrt_minimize
 
-        fixed_params [dict of str:callable]:
+        opt_params [dict of str:callable]:
             Parameters that define the optimization.
+            Includes both fixed parameters and hyperparameters (as space).
             Examples can be retrieved from get_params().
 
             model [callable]:
@@ -268,8 +270,8 @@ def reload(result, fixed_params, addtl_iters, random_seed=None, verb_model=False
     start_time = time.time()
     
     # since objective relies on global variables, set them again
-    global fixed_params_, seed_, verb_model_
-    fixed_params_ = fixed_params
+    global opt_params_, seed_, verb_model_
+    opt_params_ = opt_params
     seed_ = random_seed
     verb_model_ = verb_model
     
@@ -328,7 +330,7 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
             Optimization functions to call and their respective names.
             Names are used in the filenames upon saving.
     """
-    fixed_params = get_params(scenario)
+    opt_params = get_params(scenario)
     if(not os.path.isdir("optims/scenario" + str(scenario))):
         os.mkdir("optims/scenario" + str(scenario))
     
@@ -336,7 +338,7 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
         print("Seed: " + str(seed))
         for func_name in functions.keys():
             print(func_name + ':')
-            result = optimize(functions[func_name], fixed_params, iterations, seed, verb_model=verb_model, verb=verb)
+            result = optimize(functions[func_name], opt_params, iterations, seed, verb_model=verb_model, verb=verb)
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(iterations) + ".opt")
 
 def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_names=["gp", "dummy", "forest", "gbrt"], verb_model=False, verb=False):
@@ -365,11 +367,11 @@ def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_name
             Names of optimization functions to reload.
             Used in filenames upon saving.
     """
-    fixed_params = get_params(scenario)
+    opt_params = get_params(scenario)
     for seed in seeds:
         print("Seed: " + str(seed))
         for func_name in func_names:
             print(func_name + ':')
             result_loaded = load("optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters) + ".opt")
-            result = reload(result_loaded, fixed_params, addtl_iters, seed, verb_model=verb_model, verb=verb)
+            result = reload(result_loaded, opt_params, addtl_iters, seed, verb_model=verb_model, verb=verb)
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters+addtl_iters) + ".opt")
