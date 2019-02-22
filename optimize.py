@@ -113,6 +113,7 @@ def res_optimum_mult(results):
     min_idx = np.argmin(Y_total)
     return X[min_idx], Y_total[min_idx]**(1/len(results))
 
+
 def objective(hyper_params):
     global opt_params_
     all_params = copy(opt_params_)
@@ -377,7 +378,43 @@ def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_name
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters+addtl_iters) + ".opt")
 
 
-def reeval(scenario, iterations, best_seed=0, best_func="forest", seeds=range(5), verb_model=False):
+def reeval(scenario, x, seeds=range(5), verb_model=False):
+    """ Reload an already completed optimization and re-evaluate on its optimum.
+
+        PARAMETERS
+        ----------
+        scenario [int]:
+            id of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        x [list of int/double]
+            Location at which to re-evaluate.
+
+        seeds [list of int]:
+            Seed values used for re-evaluating.
+
+        verb_model [bool, default=False]:
+            Whether to pass verbose=True to the model.
+    """
+    opt_params = get_params(scenario)
+
+    global opt_params_, seed_, verb_model_
+    opt_params_ = opt_params
+    verb_model_ = verb_model
+    total = 1.0
+    for seed in seeds:
+        print("seed:", seed)
+        seed_ = seed
+        value = objective(x)
+        print("value:", value)
+        total *= value
+
+    average = total ** (1/len(seeds))
+    print("AVERAGE:", average)
+    
+    return average
+
+def reeval_optimum(scenario, iterations, best_seed=0, best_func="forest", seeds=range(5), verb_model=False):
     """ Reload an already completed optimization and re-evaluate on its optimum.
 
         PARAMETERS
@@ -408,20 +445,37 @@ def reeval(scenario, iterations, best_seed=0, best_func="forest", seeds=range(5)
     print("optimum:")
     print(optimum)
 
-    opt_params = get_params(scenario)
+    return reeval(scenario, optimum[0], seeds, verb_model)
 
-    global opt_params_, seed_, verb_model_
-    opt_params_ = opt_params
-    verb_model_ = verb_model
-    total = 1.0
-    for seed in seeds:
-        print("seed:", seed)
-        seed_ = seed
-        value = objective(optimum[0])
-        print("value:", value)
-        total *= value
+def reeval_minimum(scenario, iterations, best_seed=0, best_func="forest", seeds=range(5), verb_model=False):
+    """ Reload an already completed optimization and re-evaluate on its optimum.
 
-    average = total ** (1/len(seeds))
-    print("AVERAGE:", average)
-    
-    return average
+        PARAMETERS
+        ----------
+        scenario [int]:
+            id of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        iterations [int]:
+            Number of iterations of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        best_seed [int, default=0]:
+            Seed of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        best_func [str, default="forest"]:
+            Optimization function of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        seeds [list of int]:
+            Seed values used for re-evaluating.
+
+        verb_model [bool, default=False]:
+            Whether to pass verbose=True to the model.
+    """
+    minimum = load("./optims/scenario"+str(scenario)+"/"+best_func+"_"+str(best_seed)+"_"+str(iterations)+".opt").x
+    print("minimum:")
+    print(minimum)
+
+    return reeval(scenario, minimum, seeds, verb_model)

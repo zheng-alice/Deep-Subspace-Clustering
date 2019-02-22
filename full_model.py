@@ -188,7 +188,7 @@ def run_model(images_norm,
     grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, trainC, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
-    if(verbose):
+    if(True):
         print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
     # Evaluate

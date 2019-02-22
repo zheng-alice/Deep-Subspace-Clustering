@@ -94,16 +94,18 @@ Conclusions:
 -Octave seems to consistently perform worse
 -There is no behavior in Octave that matches any from MATLAB
 
+---------------------------------------------------------------------------------------------
 
 Test2:
 To see whether Octave consistently performs worse than Matlab
-All runs are 'Re-evaluate same' from 3-Optimize, average of 5
+All runs are 'Min Re-evaluate' from 3-Optimize, average of 5 (seeds 100-104)
+Only the second SSC is replaced
 
 MATLAB: rng(seed), Python3.5
 Octave: rand('state', seed), Python3.6
 
-	MATLAB		Octave
-0:	0.0076535819684	0.0722187204639
-1:	0.0028882901543	0.0265028885785
-2:	0.6898007867730	0.6787294428526
-3:	0.6779075600541 0.6633963435854
+	MATLAB			Octave			Python
+0:	.		.			.	.		.
+1:	.		.	.		.	.		.
+2:	.		.	.		.	.		.
+3:	.		.	.		.	.		.
