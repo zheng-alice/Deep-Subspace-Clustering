@@ -172,13 +172,13 @@ def optimize(function, opt_params, iterations, random_seed=None, verb_model=Fals
             Number of iterations to run the model for.
 
         random_seed [int or None, default=None]:
-            Passed to the optimizer and the model
+            Passed to the optimizer and the model.
         
         verb_model [bool, default=False]:
-            Whether to pass verbose=True to the model
+            Whether to pass verbose=True to the model.
         
         verb [bool, default=True]:
-            Whether to print info at each iteration
+            Whether to print info at each iteration.
 
         RETURNS
         -------
@@ -253,13 +253,13 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
             Number of additional iterations to run the model for.
 
         random_seed [int or None, default=None]:
-            Passed to the optimizer and the model
+            Passed to the optimizer and the model.
         
         verb_model [bool, default=False]:
-            Whether to pass verbose=True to the model
+            Whether to pass verbose=True to the model.
         
         verb [bool, default=True]:
-            Whether to print info at each iteration
+            Whether to print info at each iteration.
 
         RETURNS
         -------
@@ -375,3 +375,53 @@ def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_name
             result_loaded = load("optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters) + ".opt")
             result = reload(result_loaded, opt_params, addtl_iters, seed, verb_model=verb_model, verb=verb)
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters+addtl_iters) + ".opt")
+
+
+def reeval(scenario, iterations, best_seed=0, best_func="forest", seeds=range(5), verb_model=False):
+    """ Reload an already completed optimization and re-evaluate on its optimum.
+
+        PARAMETERS
+        ----------
+        scenario [int]:
+            id of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        iterations [int]:
+            Number of iterations of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        best_seed [int, default=0]:
+            Seed of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        best_func [str, default="forest"]:
+            Optimization function of the loaded optimization.
+            Used in filename of loaded optimization.
+
+        seeds [list of int]:
+            Seed values used for re-evaluating.
+
+        verb_model [bool, default=False]:
+            Whether to pass verbose=True to the model.
+    """
+    optimum = res_optimum(load("./optims/scenario"+str(scenario)+"/"+best_func+"_"+str(best_seed)+"_"+str(iterations)+".opt"))
+    print("optimum:")
+    print(optimum)
+
+    opt_params = get_params(scenario)
+
+    global opt_params_, seed_, verb_model_
+    opt_params_ = opt_params
+    verb_model_ = verb_model
+    total = 1.0
+    for seed in seeds:
+        print("seed:", seed)
+        seed_ = seed
+        value = objective(optimum[0])
+        print("value:", value)
+        total *= value
+
+    average = total ** (1/len(seeds))
+    print("AVERAGE:", average)
+    
+    return average
