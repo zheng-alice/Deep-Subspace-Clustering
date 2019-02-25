@@ -104,8 +104,8 @@ Only the second SSC is replaced
 MATLAB: rng(seed), Python3.5
 Octave: rand('state', seed), Python3.6
 
-	MATLAB			Octave			Python
-0:	.		.			.	.		.
-1:	.		.	.		.	.		.
-2:	.		.	.		.	.		.
-3:	.		.	.		.	.		.
+	MATLAB			Octave
+0:	0.0113638474371	63.876	.	.
+1:	0.1368499979622	25.302	.	.
+2:	0.9287300351647	8.274	.	.
+3:	0.8945677911843	9.078	.	.

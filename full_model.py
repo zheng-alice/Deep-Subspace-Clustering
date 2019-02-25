@@ -177,9 +177,9 @@ def run_model(images_norm,
 
     # Cluster
     # Matlab SSC #2
-        print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
-        print("---------------------------------")
-        start_time = time.time()
+    print("\nClustering with SSC (iter: {0:d})...".format(maxIter2))
+    print("---------------------------------")
+    start_time = time.time()
     
     if(trainC):
         savemat('./temp.mat', mdict={'C': np.float64(d.outC)})
@@ -188,8 +188,8 @@ def run_model(images_norm,
     grps = eng.SSC_modified(k, 0, False, float(alpha2), False, 1, 1e-20, maxIter2, True, seed2, trainC, **mlab_kwargs)
     labels_pred = np.asarray(grps, dtype=np.int32).flatten()
 
-    if(True):
-        print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
+    #if(verbose):
+    print("Elapsed: {0:.2f} sec\n".format(time.time()-start_time))
 
     # Evaluate
     return evaluate(labels, labels_pred)

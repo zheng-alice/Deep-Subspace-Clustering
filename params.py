@@ -91,22 +91,22 @@ all_params = [
         Real(10**1, 10**5, "log-uniform", name='lambda3'),
         Real(10**0, 10**4, "log-uniform", name='alpha2')]},
   {'model':run_ssc, 'dataset':'Coil20', 'n_rand':40, 'maxIter':250, 'space':
-       [Real(0.021193, 52.9834, "log-uniform", name='alpha')]},
+       [Real(0.138167211, 345.4180278, "log-uniform", name='alpha')]},
   # 15
   {'model':run_ae, 'dataset':'Coil20', 'n_rand':40, 'epochs_pretrain':4000, 'epochs':1000,
    'maxIter2':250, 'space':
-       [Real(10**-6, 10**-2, "log-uniform", name='lr_pretrain'),
-        Real(10**-6, 10**-2, "log-uniform", name='lr'),
-        Real(10**-3, 10**1, "log-uniform", name='lambda2'),
-        Real(10**0, 10**4, "log-uniform", name='alpha2')]},
+       [Real(1.27E-04, 0.318601418, "log-uniform", name='lr_pretrain'),
+        Real(2.33E-07, 5.82E-04, "log-uniform", name='lr'),
+        Real(1.02E-04, 0.254411693, "log-uniform", name='lambda2'),
+        Real(0.081703137, 204.2578428, "log-uniform", name='alpha2')]},
   {'model':run_model, 'dataset':'Coil20', 'n_rand':40, 'maxIter1':250, 'epochs_pretrain':4000,
    'epochs':1000, 'maxIter2':250, 'trainC':False, 'giveC':False, 'space':
-       [Real(10**-6, 10**-2, "log-uniform", name='lr_pretrain'),
-        Real(10**0, 10**4, "log-uniform", name='alpha1'),
-        Real(10**-6, 10**-2, "log-uniform", name='lr'),
-        Real(10**-2, 10**2, "log-uniform", name='lambda1'),
-        Real(10**-3, 10**1, "log-uniform", name='lambda2'),
-        Real(10**0, 10**4, "log-uniform", name='alpha2')]},
+       [Real(1.43E-04, 0.357575522, "log-uniform", name='lr_pretrain'),
+        Real(4.59E+00, 11485.88822, "log-uniform", name='alpha1'),
+        Real(2.60E-05, 6.51E-02, "log-uniform", name='lr'),
+        Real(4.93E-03, 1.23E+01, "log-uniform", name='lambda1'),
+        Real(2.08E-03, 5.194360803, "log-uniform", name='lambda2'),
+        Real(0.0739943, 184.9857491, "log-uniform", name='alpha2')]},
   {'model':run_model, 'dataset':'Coil20', 'n_rand':40, 'maxIter1':250, 'epochs_pretrain':4000,
    'epochs':1000, 'maxIter2':250, 'trainC':True, 'giveC':False, 'space':
        [Real(10**-6, 10**-2, "log-uniform", name='lr_pretrain'),
