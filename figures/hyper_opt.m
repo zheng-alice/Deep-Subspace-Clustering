@@ -1,8 +1,19 @@
+clf('reset');
+if exist('fig', 'var') && ishghandle(fig)
+    close(fig);
+end
+clear all;
+
+global axxes;
+global truth;
+global surrogate;
 load hyper_opt.mat;
 axxes = containers.Map(fieldnames(axxes), struct2cell(axxes));
+truth.names = cellstr(truth.names);
+truth.priors = cellstr(truth.priors);
 
 idx_x = 1;
-idx_y = 2;
+idx_y = 5;
 if axxes.Count < 2
     error("Data has too few dimensions: " + axxes.Count);
 end
@@ -11,11 +22,11 @@ if idx_x == idx_y
 end
 
 
-M = size(truth.y, 1);
+% Default position
 best = truth.x(truth.best, :);
 for i = 1:size(best, 2)
     % convert to surrogate indices
-    [~, idx] = min(abs(axxes(deblank(truth.names(i, :)))-best(i)));
+    [~, idx] = min(abs(axxes(truth.names{i})-best(i)));
     best(i) = idx;
 end
 slice = num2cell(best);
@@ -23,63 +34,161 @@ slice{idx_x} = ':';
 slice{idx_y} = ':';
 
 
-% create colors and size
-% size decreases with distance to visible plane
-c = linspace(0, 1, M);
-s = 50.* ones(M, 1);
-hidden = 1:axxes.Count;
-hidden([idx_x, idx_y]) = [];
-plane = 1:size(hidden, 2);
-range = 1:size(hidden, 2);
-values = truth.x(:, hidden);
-for i = plane
-    axis = axxes(deblank(truth.names(hidden(i), :)));
-    plane(i) = axis(slice{hidden(i)});
-    range(i) = axis(size(axis, 1));
-    if strcmp(deblank(truth.priors(hidden(i), :)), 'log')
-       plane(i) = log10(plane(i));
-       range(i) = log10(range(i)) - log10(axis(1));
-       values(:, i) = log10(values(:, i));
-    else
-       range(i) = range(i) - axis(1);
-    end
-end
-dist = sqrt(sum(((values - plane)./ range).^2, 2));
-s = s.* 10.^ -dist;
-plot_truth = scatter3(truth.x(:, idx_x), truth.x(:, idx_y), truth.y, s, c, 'filled');
+% Create actual plots
+c = linspace(0, 1, size(truth.y, 1));
+plot_truth = scatter3(truth.x(:, idx_x), truth.x(:, idx_y), truth.y, 50, c, 'filled');
+clear c;
 
 hold on;
 
-means = squeeze(surrogate.mean(slice{:}));
-stds = squeeze(surrogate.std(slice{:}));
-if idx_x < idx_y
-    means = means.';
-    stds = stds.';
-end
-plot_surrogate = surf(axxes(deblank(truth.names(idx_x, :))), axxes(deblank(truth.names(idx_y, :))), means);
+axis_x = axxes(truth.names{idx_x});
+axis_y = axxes(truth.names{idx_y});
+plot_surrogate = surf(axis_x, axis_y, zeros(size(axis_y, 1), size(axis_x, 1)));
 set(plot_surrogate, 'EdgeAlpha', 'interp', 'FaceColor', 'interp', 'FaceAlpha', 'interp');
-set(plot_surrogate, 'AlphaData', 10.^-stds);
+clear axis_x;
+clear axis_y;
 
-
-if strcmp(deblank(truth.priors(idx_x, :)), 'log')
-    set(gca, 'Xscale', 'log');
+ax = gca;
+if strcmp(truth.priors{idx_x}, 'log')
+    set(ax, 'Xscale', 'log');
 end
-if strcmp(deblank(truth.priors(idx_y, :)), 'log')
-    set(gca, 'Yscale', 'log');
+if strcmp(truth.priors{idx_y}, 'log')
+    set(ax, 'Yscale', 'log');
 end
-set(gca, 'Zscale', 'log');
+set(ax, 'Zscale', 'log');
+set(ax.Parent, 'Position', [650 60 700 685]);
 
-% Create figure window and components
+string = replace(truth.names{idx_x}, '_', '-');
+string(1) = upper(string(1));
+ax.XLabel.String = string;
+string = replace(truth.names{idx_y}, '_', '-');
+string(1) = upper(string(1));
+ax.YLabel.String = string;
+ax.ZLabel.String = "Error";
+clear string;
 
-% fig = uifigure('Position',[100 100 350 275]);
-% 
-% cg = uigauge(fig,'Position',[100 100 120 120]);
-% 
-% sld = uislider(fig,...
-%     'Position',[100 75 120 3],...
-%     'ValueChangingFcn',@(sld,event) updateGauge(event,cg));
-% 
-% % Create ValueChangedFcn callback
-% function updatePlot(event,cg)
-%     cg.Value = event.Value;
-% end
+
+% Package variables
+hidden = 1:axxes.Count;
+hidden([idx_x, idx_y]) = [];
+
+fig = uifigure('Position', [50 75 550 65+65*size(hidden, 2)]);
+data = guihandles(fig);
+data.scatter = plot_truth;
+data.surf = plot_surrogate;
+data.best = best;
+data.slice = slice;
+data.idx_x = idx_x;
+data.idx_y = idx_y;
+guidata(fig, data);
+clear plot_truth;
+clear plot_surrogate;
+clear best;
+clear slice;
+clear idx_x;
+clear idx_y;
+
+
+% Create GUI
+for i = 1:size(hidden, 2)
+    idx = hidden(i);
+    axisName = truth.names{idx};
+    label = uilabel(fig,...
+        'Position', [25, 65*(size(hidden, 2)-i)+25+30, 500, 22],...
+        'Text', axisName);
+    set(label, 'FontSize', 14);
+    axis = axxes(axisName);
+    sld = uislider(fig,...
+        'Position', [25, 65*(size(hidden, 2)-i)+25+25, 500, 3],...
+        'Value', data.best(idx),...
+        'Limits', [1, size(axis, 1)],...
+        'MajorTicks', 1:size(axis, 1),...
+        'MajorTickLabels', replace(replace(cellstr(num2str(axis, '%-.3G')), 'E+0', 'E+'), 'E-0', 'E-'),...
+        'ValueChangingFcn', @updateSlice,...
+        'ValueChangedFcn', @discretize);
+    set(sld, 'MinorTicks', [], 'UserData', idx);
+end
+clear i;
+clear idx;
+clear axis;
+clear axisName;
+clear label;
+clear sld;
+
+[~] = uibutton(fig,...
+    'Position', [25 65*size(hidden, 2)+25 100 25],...
+    'Text', "Reset",...
+    'ButtonPushedFcn', @(button, event) resetSlice(fig));
+updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+clear hidden;
+clear data;
+
+
+
+% Callbacks
+function updateSlice(sld, event)
+    data = guidata(sld.Parent);
+    if data.slice{sld.UserData} ~= round(event.Value)
+        data.slice{sld.UserData} = round(event.Value);
+        
+        updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+        guidata(sld.Parent, data);
+    end
+end
+
+function discretize(sld, event)
+    sld.Value = round(event.Value);
+end
+
+function resetSlice(fig)
+    data = guidata(fig);
+    for sld = fig.Children'
+        if strcmp(sld.Type, 'uislider')
+            idx = sld.UserData;
+            data.slice{idx} = data.best(idx);
+            sld.Value = data.best(idx);
+        end
+    end
+    
+    updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+    guidata(fig, data);
+end
+
+% Update surface, scatter size
+function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
+    global axxes;
+    global truth;
+    global surrogate;
+    
+    % update scatter size - decreases with distance to visible plane
+    s = 50.* ones(size(get(plot_truth, 'CData'), 2), 1);
+    hidden = 1:axxes.Count;
+    hidden([idx_x, idx_y]) = [];
+    plane = 1:size(hidden, 2);
+    range = 1:size(hidden, 2);
+    values = truth.x(:, hidden);
+    for i = plane
+        axis = axxes(truth.names{hidden(i)});
+        plane(i) = axis(slice{hidden(i)});
+        range(i) = axis(size(axis, 1));
+        if strcmp(truth.priors{hidden(i)}, 'log')
+           plane(i) = log10(plane(i));
+           range(i) = log10(range(i)) - log10(axis(1));
+           values(:, i) = log10(values(:, i));
+        else
+           range(i) = range(i) - axis(1);
+        end
+    end
+    dist = sqrt(sum(((values - plane)./ range).^2, 2));
+    s = s.* 10.^ -dist;
+    set(plot_truth, 'SizeData', s);
+    
+    % update surface slice
+    means = squeeze(surrogate.mean(slice{:}));
+    stds = squeeze(surrogate.std(slice{:}));
+    if idx_x < idx_y
+        means = means.';
+        stds = stds.';
+    end
+    set(plot_surrogate, 'ZData', means, 'AlphaData', 32.^-stds, 'AlphaDataMapping', 'none');
+end
