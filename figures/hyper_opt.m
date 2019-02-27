@@ -13,7 +13,7 @@ truth.names = cellstr(truth.names);
 truth.priors = cellstr(truth.priors);
 
 idx_x = 1;
-idx_y = 2;
+idx_y = 5;
 if axxes.Count < 2
     error("Data has too few dimensions: " + axxes.Count);
 end
@@ -23,8 +23,6 @@ end
 
 
 % Default position
-global M;
-M = size(truth.y, 1);
 best = truth.x(truth.best, :);
 for i = 1:size(best, 2)
     % convert to surrogate indices
@@ -37,8 +35,9 @@ slice{idx_y} = ':';
 
 
 % Create actual plots
-c = linspace(0, 1, M);
+c = linspace(0, 1, size(truth.y, 1));
 plot_truth = scatter3(truth.x(:, idx_x), truth.x(:, idx_y), truth.y, 50, c, 'filled');
+clear c;
 
 hold on;
 
@@ -46,60 +45,113 @@ axis_x = axxes(truth.names{idx_x});
 axis_y = axxes(truth.names{idx_y});
 plot_surrogate = surf(axis_x, axis_y, zeros(size(axis_y, 1), size(axis_x, 1)));
 set(plot_surrogate, 'EdgeAlpha', 'interp', 'FaceColor', 'interp', 'FaceAlpha', 'interp');
+clear axis_x;
+clear axis_y;
 
-
+ax = gca;
 if strcmp(truth.priors{idx_x}, 'log')
-    set(gca, 'Xscale', 'log');
+    set(ax, 'Xscale', 'log');
 end
 if strcmp(truth.priors{idx_y}, 'log')
-    set(gca, 'Yscale', 'log');
+    set(ax, 'Yscale', 'log');
 end
-set(gca, 'Zscale', 'log');
+set(ax, 'Zscale', 'log');
+set(ax.Parent, 'Position', [650 60 700 685]);
+
+string = replace(truth.names{idx_x}, '_', '-');
+string(1) = upper(string(1));
+ax.XLabel.String = string;
+string = replace(truth.names{idx_y}, '_', '-');
+string(1) = upper(string(1));
+ax.YLabel.String = string;
+ax.ZLabel.String = "Error";
+clear string;
 
 
-updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y);
+% Package variables
+hidden = 1:axxes.Count;
+hidden([idx_x, idx_y]) = [];
 
-fig = uifigure('Position', [100 100 400 300]);
+fig = uifigure('Position', [50 75 550 65+65*size(hidden, 2)]);
+data = guihandles(fig);
+data.scatter = plot_truth;
+data.surf = plot_surrogate;
+data.best = best;
+data.slice = slice;
+data.idx_x = idx_x;
+data.idx_y = idx_y;
+guidata(fig, data);
+clear plot_truth;
+clear plot_surrogate;
+clear best;
+clear slice;
+clear idx_x;
+clear idx_y;
 
-asdf = 3;
-axisName = truth.names{asdf};
-label = uilabel(fig,...
-    'Position', [25, 30+25, 350, 22],...
-    'Text', axisName);
-set(label, 'FontSize', 14);
-axis = axxes(axisName);
-sld = uislider(fig,...
-    'Position', [25, 25+25, 350, 3],...
-    'Value', best(asdf),...
-    'Limits', [1, size(axis, 1)],...
-    'MajorTicks', 1:size(axis, 1),...
-    'MajorTickLabels', cellstr(num2str(axis, '%-.4G')),...
-    'ValueChangedFcn', @(sld, event) updateSlice(sld, event, plot_truth, plot_surrogate, slice, idx_x, idx_y));
-set(sld, 'MinorTicks', []);
 
-asdf = 4;
-axisName2 = truth.names{asdf};
-label2 = uilabel(fig,...
-    'Position', [25, 60+30+25, 350, 22],...
-    'Text', axisName2);
-set(label2, 'FontSize', 14);
-axis2 = axxes(axisName2);
-sld2 = uislider(fig,...
-    'Position', [25, 60+25+25, 350, 3],...
-    'Value', best(asdf),...
-    'Limits', [1, size(axis2, 1)],...
-    'MajorTicks', 1:size(axis2, 1),...
-    'MajorTickLabels', cellstr(num2str(axis2, '%-.4G')),...
-    'ValueChangedFcn', @(sld2, event) updateSlice(sld2, event, plot_truth, plot_surrogate, slice, idx_x, idx_y));
-set(sld2, 'MinorTicks', []);
+% Create GUI
+for i = 1:size(hidden, 2)
+    idx = hidden(i);
+    axisName = truth.names{idx};
+    label = uilabel(fig,...
+        'Position', [25, 65*(size(hidden, 2)-i)+25+30, 500, 22],...
+        'Text', axisName);
+    set(label, 'FontSize', 14);
+    axis = axxes(axisName);
+    sld = uislider(fig,...
+        'Position', [25, 65*(size(hidden, 2)-i)+25+25, 500, 3],...
+        'Value', data.best(idx),...
+        'Limits', [1, size(axis, 1)],...
+        'MajorTicks', 1:size(axis, 1),...
+        'MajorTickLabels', replace(replace(cellstr(num2str(axis, '%-.3G')), 'E+0', 'E+'), 'E-0', 'E-'),...
+        'ValueChangingFcn', @updateSlice,...
+        'ValueChangedFcn', @discretize);
+    set(sld, 'MinorTicks', [], 'UserData', idx);
+end
+clear i;
+clear idx;
+clear axis;
+clear axisName;
+clear label;
+clear sld;
 
-% Slider callback
-function updateSlice(sld, event, plot_truth, plot_surrogate, slice, idx_x, idx_y)
-    sld.Value = round(event.Value);
-    if sld.Value ~= event.PreviousValue
-        slice{3} = sld.Value;
-        updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y);
+[~] = uibutton(fig,...
+    'Position', [25 65*size(hidden, 2)+25 100 25],...
+    'Text', "Reset",...
+    'ButtonPushedFcn', @(button, event) resetSlice(fig));
+updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+clear hidden;
+clear data;
+
+
+
+% Callbacks
+function updateSlice(sld, event)
+    data = guidata(sld.Parent);
+    if data.slice{sld.UserData} ~= round(event.Value)
+        data.slice{sld.UserData} = round(event.Value);
+        
+        updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+        guidata(sld.Parent, data);
     end
+end
+
+function discretize(sld, event)
+    sld.Value = round(event.Value);
+end
+
+function resetSlice(fig)
+    data = guidata(fig);
+    for sld = fig.Children'
+        if strcmp(sld.Type, 'uislider')
+            idx = sld.UserData;
+            data.slice{idx} = data.best(idx);
+            sld.Value = data.best(idx);
+        end
+    end
+    
+    updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
+    guidata(fig, data);
 end
 
 % Update surface, scatter size
@@ -107,10 +159,9 @@ function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
     global axxes;
     global truth;
     global surrogate;
-    global M;
     
     % update scatter size - decreases with distance to visible plane
-    s = 50.* ones(M, 1);
+    s = 50.* ones(size(get(plot_truth, 'CData'), 2), 1);
     hidden = 1:axxes.Count;
     hidden([idx_x, idx_y]) = [];
     plane = 1:size(hidden, 2);
@@ -139,5 +190,5 @@ function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
         means = means.';
         stds = stds.';
     end
-    set(plot_surrogate, 'ZData', means, 'AlphaData', 10.^-stds, 'AlphaDataMapping', 'none');
+    set(plot_surrogate, 'ZData', means, 'AlphaData', 32.^-stds, 'AlphaDataMapping', 'none');
 end
