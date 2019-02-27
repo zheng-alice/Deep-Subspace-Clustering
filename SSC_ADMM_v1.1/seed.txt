@@ -101,11 +101,17 @@ To see whether Octave consistently performs worse than Matlab
 All runs are 'Min Re-evaluate' from 3-Optimize, average of 5 (seeds 100-104)
 Only the second SSC is replaced
 
-MATLAB: rng(seed), Python3.5
-Octave: rand('state', seed), Python3.6
+MATLAB: rng(seed), Python3.5 (local)
+Octave: rand('state', seed), Python3.6 (duke)
+Speed differences could be based purely on CPU power
 
 	MATLAB			Octave
-0:	0.0113638474371	63.876	.	.
-1:	0.1368499979622	25.302	.	.
-2:	0.9287300351647	8.274	.	.
-3:	0.8945677911843	9.078	.	.
+0:	0.0113638474371	63.876	0.0702008296682	34.736
+1:	0.1368499979622	25.302	0.2042423789422	29.960
+2:	0.9287300351647	8.274	0.9298394523315	10.698
+3:	0.8945677911843	9.078	0.8912295083214	11.870
+
+Conclusions:
+-Octave consistently performs worse
+-Loss in performance greater with lesser errors (probably due to different k-means implementation)
+-Octave seems to be nearly twice as fast, but only in scenario 0 (cause is unknown)
