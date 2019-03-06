@@ -12,6 +12,7 @@ from scipy.io import savemat, loadmat
 from sklearn.utils import check_random_state
 from skopt import dump, load
 from skopt import gp_minimize, dummy_minimize, forest_minimize, gbrt_minimize
+from skopt.callbacks import VerboseCallback
 from skopt.learning import GaussianProcessRegressor
 from skopt.optimizer import base_minimize
 from skopt.plots import plot_convergence
@@ -133,14 +134,6 @@ def objective(hyper_params):
     return internal(hyper_params)
 
 def callback(result):
-    if('verb_unmute_' in globals()):
-        global verb_unmute_, xs_
-        if(len(xs_) == 0):
-            print("Set verb to " + str(verb_unmute_))
-            if(verb_unmute_):
-                # will evaluate to True
-                result.specs['args']['verbose'].value.append(0)
-            del verb_unmute_
     reduce(result)
     sys.stdout.flush()
 
@@ -224,6 +217,24 @@ def func_new(hyper_params):
             warnings.warn("Deviated from expected value, re-evaluating", RuntimeWarning)
         else:
             return y
+
+    # manually add the verbose callback
+    if('callback_' in globals()):
+        global callback_, callback_verb_params_
+        skip = callback_verb_params_.pop('skip')
+        
+        # very bad coding practices
+        callback_verb = VerboseCallback.__new__(VerboseCallback, **callback_verb_params_)
+        callback_verb.n_init = callback_verb_params_['n_init'];
+        callback_verb.n_random = callback_verb_params_['n_random'];
+        callback_verb.n_total = callback_verb_params_['n_total'];
+        callback_verb.iter_no = skip + 1    # avoid printing that "Iteration No: 1" line
+        callback_verb._start_time = time.time()
+        callback_verb._print_info(start=True)
+
+        callback_.append(callback_verb)
+        del callback_, callback_verb_params_
+    
     return func_(hyper_params)
 
 def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, verb=True, mute_reload=True):
@@ -294,26 +305,26 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
     args['n_calls'] += addtl_iters
     args['verbose'] = verb
 
-    # mute, if necessary
-    if(mute_reload):
-        global verb_unmute_
-        verb_unmute_ = verb
-        # pretty janky, but I needed something mutable and uncopyable
-        class Boolean(object):
-            def __init__(self):
-                self.value = bytearray(0)
-            def __nonzero__(self):
-                return bool(self.value)
-            def __bool__(self):
-                return bool(self.value)
-        args['verbose'] = Boolean()
-    
     # global b/c I couldn't find a better way to pass
     global func_, xs_, ys_
     func_ = args['func']
     xs_ = list(result.x_iters)
     ys_ = list(result.func_vals)
     args['func'] = func_new
+
+    # mute, if necessary
+    if(mute_reload and verb):
+        args['verbose'] = False
+        global callback_, callback_verb_params_
+        callback_ = [args['callback']]
+        x0 = args['x0']
+        callback_verb_params_ = {
+            'n_init': 0 if x0 is None else 1 if not isinstance(x0[0], (list, tuple)) else len(x0) \
+                if not [args['y0']] else 0,
+            'n_random': args['n_random_starts'],
+            'n_total': args['n_calls'],
+            'skip': len(xs_)}
+        args['callback'] = callback_
     
     # recover initial random_state
     if(isinstance(args['random_state'], np.random.RandomState)):
@@ -326,10 +337,10 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
     result_new = base_minimize(**args)
     del opt_params_, seed_, verb_model_
 
-    # change back to immutable boolean
-    if(mute_reload):
-        result_new.specs['args']['verbose'] = True if result_new.specs['args']['verbose'] else False
-    
+    # remove the manually-added verbose callback
+    if(mute_reload and verb):
+        result_new.specs['args']['callback'] = args['callback'][0]
+
     # change the function back, to reload multiple times
     result_new.specs['args']['func'] = func_
     del func_, xs_, ys_
