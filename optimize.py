@@ -133,6 +133,14 @@ def objective(hyper_params):
     return internal(hyper_params)
 
 def callback(result):
+    if('verb_unmute_' in globals()):
+        global verb_unmute_, xs_
+        if(len(xs_) == 0):
+            print("Set verb to " + str(verb_unmute_))
+            if(verb_unmute_):
+                # will evaluate to True
+                result.specs['args']['verbose'].value.append(0)
+            del verb_unmute_
     reduce(result)
     sys.stdout.flush()
 
@@ -201,6 +209,7 @@ def optimize(function, opt_params, iterations, random_seed=None, verb_model=Fals
         optfunc_params['n_random_starts'] = opt_params['n_rand']
         optfunc_params['n_jobs'] = -1
     result = function(objective, opt_params['space'], **optfunc_params)
+    del opt_params_, seed_, verb_model_
     if(verb):
         res_plot(result)
         print()
@@ -217,7 +226,7 @@ def func_new(hyper_params):
             return y
     return func_(hyper_params)
 
-def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, verb=True):
+def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, verb=True, mute_reload=True):
     """ Resume a previous optimization.
 
         PARAMETERS
@@ -244,7 +253,7 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
             
             space [list]:
                 Hyperparameters to find and their limits.
-                Same requirements as that of the optimization method
+                Same requirements as that of the optimization method.
                 All of these get passed to the model
                 under their respective names.
 
@@ -261,6 +270,10 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
         
         verb [bool, default=True]:
             Whether to print info at each iteration.
+
+        mute_reload [bool, default=True]:
+            Passes False to verb upon initial reloaded iterations.
+            Reverts to specified value when recovery is complete.
 
         RETURNS
         -------
@@ -280,6 +293,20 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
     args = deepcopy(result.specs['args'])
     args['n_calls'] += addtl_iters
     args['verbose'] = verb
+
+    # mute, if necessary
+    if(mute_reload):
+        global verb_unmute_
+        verb_unmute_ = verb
+        # pretty janky, but I needed something mutable and uncopyable
+        class Boolean(object):
+            def __init__(self):
+                self.value = bytearray(0)
+            def __nonzero__(self):
+                return bool(self.value)
+            def __bool__(self):
+                return bool(self.value)
+        args['verbose'] = Boolean()
     
     # global b/c I couldn't find a better way to pass
     global func_, xs_, ys_
@@ -297,9 +324,15 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
     
     # run the optimization
     result_new = base_minimize(**args)
+    del opt_params_, seed_, verb_model_
+
+    # change back to immutable boolean
+    if(mute_reload):
+        result_new.specs['args']['verbose'] = True if result_new.specs['args']['verbose'] else False
     
     # change the function back, to reload multiple times
     result_new.specs['args']['func'] = func_
+    del func_, xs_, ys_
     
     if(verb):
         res_plot(result_new)
@@ -342,7 +375,7 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
             result = optimize(functions[func_name], opt_params, iterations, seed, verb_model=verb_model, verb=verb)
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(iterations) + ".opt")
 
-def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_names=["gp", "dummy", "forest", "gbrt"], verb_model=False, verb=False):
+def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_names=["gp", "dummy", "forest", "gbrt"], verb_model=False, verb=False, mute_reload=True):
     """ Call reload() across several functions and seeds.
         Automatically dump results.
 
@@ -374,7 +407,7 @@ def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_name
         for func_name in func_names:
             print(func_name + ':')
             result_loaded = load("optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters) + ".opt")
-            result = reload(result_loaded, opt_params, addtl_iters, seed, verb_model=verb_model, verb=verb)
+            result = reload(result_loaded, opt_params, addtl_iters, seed, verb_model=verb_model, verb=verb, mute_reload=mute_reload)
             dump(result, "optims/scenario" + str(scenario) + '/' + func_name + '_' + str(seed) + "_" + str(init_iters+addtl_iters) + ".opt")
 
 
@@ -411,6 +444,7 @@ def reeval(scenario, x, seeds=range(5), verb_model=False):
 
     average = total ** (1/len(seeds))
     print("AVERAGE:", average)
+    del opt_params_, seed_, verb_model_
     
     return average
 
