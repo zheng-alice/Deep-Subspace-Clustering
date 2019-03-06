@@ -3,7 +3,7 @@ from optimize import *
 from skopt.acquisition import _gaussian_acquisition
 
 
-def extract_visual(result, N=10):
+def visual_extract(result, N=10):
 	# K - number of axes
 	# N - number of eval points per axis
 	K = result.space.n_dims
@@ -64,7 +64,7 @@ def extract_visual(result, N=10):
 	return {'surrogate':surrogate, 'axxes':axes, 'truth':truth}
 
 
-if __name__ == '__main__':
-	result = load("./optims/scenario3/forest_0_100.opt")
-	mdict = extract_visual(result, 10)
+def visual_save(filename, N=10):
+	result = load(filename)
+	mdict = visual_extract(result, N)
 	savemat('./figures/hyper_opt.mat', mdict=mdict, oned_as='column')

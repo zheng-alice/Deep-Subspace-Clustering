@@ -12,14 +12,16 @@ axxes = containers.Map(fieldnames(axxes), struct2cell(axxes));
 truth.names = cellstr(truth.names);
 truth.priors = cellstr(truth.priors);
 
-idx_x = 1;
-idx_y = 5;
 if axxes.Count < 2
     error("Data has too few dimensions: " + axxes.Count);
 end
-if idx_x == idx_y
-    error("Visualized dimension indices must differ");
+
+for i = 1:4
+    signif(i) = mean2(std(surrogate.mean, 0, i));
 end
+[signif, order] = sort(signif, 'descend');
+idx_x = order(1);
+idx_y = order(2);
 
 
 % Default position
@@ -44,19 +46,20 @@ hold on;
 axis_x = axxes(truth.names{idx_x});
 axis_y = axxes(truth.names{idx_y});
 plot_surrogate = surf(axis_x, axis_y, zeros(size(axis_y, 1), size(axis_x, 1)));
-set(plot_surrogate, 'EdgeAlpha', 'interp', 'FaceColor', 'interp', 'FaceAlpha', 'interp');
-clear axis_x;
-clear axis_y;
+plot_surrogate.EdgeAlpha = 'interp';
+plot_surrogate.FaceColor = 'interp';
+plot_surrogate.FaceAlpha = 'interp';
+clear axis_x axis_y;
 
 ax = gca;
 if strcmp(truth.priors{idx_x}, 'log')
-    set(ax, 'Xscale', 'log');
+    ax.XScale = 'log';
 end
 if strcmp(truth.priors{idx_y}, 'log')
-    set(ax, 'Yscale', 'log');
+    ax.YScale = 'log';
 end
-set(ax, 'Zscale', 'log');
-set(ax.Parent, 'Position', [650 60 700 685]);
+ax.ZScale = 'log';
+ax.Parent.Position = [650 60 700 685];
 
 string = replace(truth.names{idx_x}, '_', '-');
 string(1) = upper(string(1));
@@ -69,10 +72,7 @@ clear string;
 
 
 % Package variables
-hidden = 1:axxes.Count;
-hidden([idx_x, idx_y]) = [];
-
-fig = uifigure('Position', [50 75 550 65+65*size(hidden, 2)]);
+fig = uifigure('Position', [25 75 600 65+65*(size(order, 2)-2)]);
 data = guihandles(fig);
 data.scatter = plot_truth;
 data.surf = plot_surrogate;
@@ -81,46 +81,41 @@ data.slice = slice;
 data.idx_x = idx_x;
 data.idx_y = idx_y;
 guidata(fig, data);
-clear plot_truth;
-clear plot_surrogate;
-clear best;
-clear slice;
-clear idx_x;
-clear idx_y;
+clear plot_truth plot_surrogate;
+clear best slice;
+clear idx_x idx_y;
 
 
 % Create GUI
-for i = 1:size(hidden, 2)
-    idx = hidden(i);
+for i = 3:size(order, 2)
+    idx = order(i);
     axisName = truth.names{idx};
     label = uilabel(fig,...
-        'Position', [25, 65*(size(hidden, 2)-i)+25+30, 500, 22],...
+        'Position', [25, 65*(size(order, 2)-i)+25+30, 550, 22],...
         'Text', axisName);
-    set(label, 'FontSize', 14);
+    label.FontSize = 14;
     axis = axxes(axisName);
+    majorIdx = uint8(linspace(1, size(axis, 1), 10));
     sld = uislider(fig,...
-        'Position', [25, 65*(size(hidden, 2)-i)+25+25, 500, 3],...
+        'Position', [25, 65*(size(order, 2)-i)+25+25, 550, 3],...
         'Value', data.best(idx),...
         'Limits', [1, size(axis, 1)],...
-        'MajorTicks', 1:size(axis, 1),...
-        'MajorTickLabels', replace(replace(cellstr(num2str(axis, '%-.3G')), 'E+0', 'E+'), 'E-0', 'E-'),...
+        'MajorTicks', majorIdx,...
+        'MajorTickLabels', replace(replace(cellstr(num2str(axis(majorIdx), '%-.3G')), 'E+0', 'E+'), 'E-0', 'E-'),...
         'ValueChangingFcn', @updateSlice,...
         'ValueChangedFcn', @discretize);
-    set(sld, 'MinorTicks', [], 'UserData', idx);
+    sld.MinorTicks = 1:size(axis, 1);
+    sld.UserData = idx;
 end
-clear i;
-clear idx;
-clear axis;
-clear axisName;
-clear label;
-clear sld;
+clear i idx majorIdx;
+clear axis axisName;
+clear label sld;
 
 [~] = uibutton(fig,...
-    'Position', [25 65*size(hidden, 2)+25 100 25],...
+    'Position', [25 65*(size(order, 2)-2)+25 100 25],...
     'Text', "Reset",...
     'ButtonPushedFcn', @(button, event) resetSlice(fig));
 updatePlot(data.scatter, data.surf, data.slice, data.idx_x, data.idx_y);
-clear hidden;
 clear data;
 
 
@@ -161,7 +156,7 @@ function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
     global surrogate;
     
     % update scatter size - decreases with distance to visible plane
-    s = 50.* ones(size(get(plot_truth, 'CData'), 2), 1);
+    s = 50.* ones(size(plot_truth.CData, 2), 1);
     hidden = 1:axxes.Count;
     hidden([idx_x, idx_y]) = [];
     plane = 1:size(hidden, 2);
@@ -181,7 +176,7 @@ function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
     end
     dist = sqrt(sum(((values - plane)./ range).^2, 2));
     s = s.* 10.^ -dist;
-    set(plot_truth, 'SizeData', s);
+    plot_truth.SizeData = s;
     
     % update surface slice
     means = squeeze(surrogate.mean(slice{:}));
@@ -190,5 +185,7 @@ function updatePlot(plot_truth, plot_surrogate, slice, idx_x, idx_y)
         means = means.';
         stds = stds.';
     end
-    set(plot_surrogate, 'ZData', means, 'AlphaData', 32.^-stds, 'AlphaDataMapping', 'none');
+    plot_surrogate.ZData = means;
+    plot_surrogate.AlphaData = 32.^-stds;
+    plot_surrogate.AlphaDataMapping = 'none';
 end
