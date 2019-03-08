@@ -2,7 +2,7 @@ clf('reset');
 if exist('fig', 'var') && ishghandle(fig)
     close(fig);
 end
-clear all;
+clear variables;
 
 global axxes;
 global truth;
@@ -16,7 +16,8 @@ if axxes.Count < 2
     error("Data has too few dimensions: " + axxes.Count);
 end
 
-for i = 1:4
+signif = zeros(1, axxes.Count);
+for i = 1:axxes.Count
     signif(i) = mean2(std(surrogate.mean, 0, i));
 end
 [signif, order] = sort(signif, 'descend');
@@ -95,7 +96,7 @@ for i = 3:size(order, 2)
         'Text', axisName);
     label.FontSize = 14;
     axis = axxes(axisName);
-    majorIdx = uint8(linspace(1, size(axis, 1), 10));
+    majorIdx = uint8(linspace(1, size(axis, 1), min(10, size(axis, 1))));
     sld = uislider(fig,...
         'Position', [25, 65*(size(order, 2)-i)+25+25, 550, 3],...
         'Value', data.best(idx),...
