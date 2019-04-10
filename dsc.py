@@ -153,6 +153,7 @@ class DeepSubspaceClustering:
         #         print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
         self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.trainedC], feed_dict={self.X: x_batch, self.C: c_batch})
+        return sess
 
 
     def _add_noise(self, x):
