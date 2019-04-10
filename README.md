@@ -95,13 +95,16 @@ Through ```pip``` or ```conda```, install the following:
 * matplotlib
 * pympler
 * pathlib
+* mnist
 
 ### SSC using ADMM
 Download code for [SSC using ADMM](http://vision.jhu.edu/code/). Unzip the contents into ```SSC_ADMM_v1.1```, located at the root of the repository.
 
 ### Datasets
-Download any desired datasets. By default, the loading methods look for a ```data``` folder at the root of the repository.
+Download and unzip any desired datasets. By default, the loading methods look for a ```data``` folder at the root of the repository.
 * [Extended YaleB](http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html) (cropped images)
 * [Coil20](http://www.cs.columbia.edu/CAVE/software/softlib/coil-20.php) (processed)
+* [MNIST](http://yann.lecun.com/exdb/mnist/) will be automatically downloaded the first time ```load_MNIST``` is run
+* [CIFAR10](https://www.cs.toronto.edu/~kriz/cifar.html) (python version)
 
 Alternatively, you can just load the already preprocessed matrices from ```saved```.
