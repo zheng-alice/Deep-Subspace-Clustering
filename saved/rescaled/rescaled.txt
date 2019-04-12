@@ -1,0 +1,10 @@
+downsample
+	YaleB: (192, 168) -> (32, 28)
+	COIL20: (128, 128) -> (32, 32)
+	skipped for CIFAR10, MNIST
+	bi-linear aliasing
+	edge reflect
+
+norm
+	[-1, 1]
+	global

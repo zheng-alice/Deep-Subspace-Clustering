@@ -6,6 +6,7 @@ import time
 import sys
 from img2matrix import single_img2dsift
 from scipy.io import savemat, loadmat
+from skimage.transform import resize
 from sklearn.decomposition import PCA
 from sklearn.metrics import adjusted_rand_score as ari
 from sklearn.metrics import normalized_mutual_info_score as nmi
@@ -57,6 +58,35 @@ else:
 #images_norm = data_loaded['X']
 #labels = data_loaded['Y'].reshape(-1)
 #run_model(images_norm, labels)
+
+def rescale(images):
+    maxdim = max(images.shape[1:])
+    if(maxdim > 32):
+        print("\nDownsampling...")
+        print("----------------")
+        start_time = time.time()
+
+        # Downsample
+        # for now, only supports single-channel images
+        factor = maxdim / 32
+        newsize = (int(images.shape[1]/factor), int(images.shape[2]/factor))
+        images = np.moveaxis(np.float32(resize(np.moveaxis(images, 0, -1), output_shape=newsize, order=1, mode='reflect', anti_aliasing=True)), -1, 0)
+
+        print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+
+
+    print("\nNormalizing data...")
+    print("-------------------")
+    start_time = time.time()
+
+    # Normalize PCA output
+    mmin = np.min(images)
+    mmax = np.max(images)
+    images_norm = (np.multiply(images, 2, dtype='float32') - mmax - mmin) / (mmax - mmin)
+
+    print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
+
+    return images_norm
 
 def preprocess(images):
     print("\nRunning DSIFT...")

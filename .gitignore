@@ -26,5 +26,7 @@ octave-workspace
 data
 
 # Saved matrices for faster loading
-saved/raw
+saved/raw/*
+saved/rescaled/*
+!/saved/**/*.txt
 figures/hyper_opt.mat

@@ -1,0 +1,9 @@
+DSIFT
+	gridSpacing = patchSize = max(dim) // 16
+
+PCA
+	300
+
+norm
+	[-1, 1]
+	global
