@@ -50,11 +50,11 @@ else:
 #from load import load_YaleB
 #images, labels = load_YaleB()
 #savemat('./saved/raw/yaleB.mat', mdict={'X':images, 'Y':labels})
-#images_norm = preprocess(images)
-#savemat('./saved/processed/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
+#images_norm = rescale(images)
+#savemat('./saved/rescaled/yaleB.mat', mdict={'X':images_norm, 'Y':labels})
 
 #from scipy.io import loadmat
-#data_loaded = loadmat("./saved/processed/yaleB.mat")
+#data_loaded = loadmat("./saved/rescaled/yaleB.mat")
 #images_norm = data_loaded['X']
 #labels = data_loaded['Y'].reshape(-1)
 #run_model(images_norm, labels)
@@ -79,7 +79,7 @@ def rescale(images):
     print("-------------------")
     start_time = time.time()
 
-    # Normalize PCA output
+    # Normalize scaled output
     mmin = np.min(images)
     mmax = np.max(images)
     images_norm = (np.multiply(images, 2, dtype='float32') - mmax - mmin) / (mmax - mmin)

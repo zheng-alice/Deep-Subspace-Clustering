@@ -10,7 +10,7 @@ def load_YaleB(path="./data/CroppedYale"):
     print("----------------")
     start_time = time.time()
 
-    train, test, img_size = img2matrix.batch_load_YaleB(path, truncate_num=38, images_per_person=None)
+    train, test, img_size = img2matrix.batch_load_YaleB(path, truncate_num=999, images_per_person=None)
     images = train[0]
     labels = train[1]
 
