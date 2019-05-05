@@ -14,9 +14,9 @@ sess.close()
 
 class DeepSubspaceClustering:
 
-    def __init__(self, inputX, C=None, trainC=False, hidden_dims=[300,150,300], lambda1=0.01, lambda2=0.01, lambda3=0.0, activation='tanh', \
-                 weight_init='uniform', noise=None, learning_rate=0.1, optimizer='Adam', decay='none', \
-                 sda_optimizer='Adam', sda_decay='none', weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
+    def __init__(self, inputX, load_path=None, C=None, trainC=False, hidden_dims=[300,150,300], activation='tanh', \
+                 weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
+                 weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
         np.random.seed(seed)
@@ -74,31 +74,30 @@ class DeepSubspaceClustering:
             J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].w)))
             J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].b)))
 
-        J3 = lambda2 * tf.add_n(J3_list)
+        self.J3 = tf.add_n(J3_list)
 
         self.H_M = self.hidden_layers[-1].output
         # H(M/2) the output of the mid layer
         self.H_M_2 = self.hidden_layers[int((len(hidden_dims)-1)/2)].output
 
         # calculate loss J1
-        # J1 = tf.nn.l2_loss(tf.subtract(self.X, self.H_M))
+        # self.J1 = tf.nn.l2_loss(tf.subtract(self.X, self.H_M))
 
-        J1 = tf.reduce_mean(tf.square(tf.subtract(self.X, self.H_M)))
-
-        self.cost = J1 + J3
+        self.J1 = tf.reduce_mean(tf.square(tf.subtract(self.X, self.H_M)))
 
         # calculate loss J2
+        self.J2 = 0
+        self.J4 = 0
         if self.givenC or self.trainC:
             if self.trainC:
-                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(self.H_M_2, self.H_M_2_post)))
-                self.cost += lambda3 * tf.reduce_mean(tf.square(self.trainedC))
+                self.J2 = tf.reduce_mean(tf.square(tf.subtract(self.H_M_2, self.H_M_2_post)))
+                self.J4 = tf.reduce_mean(tf.square(self.trainedC))
             else:
-                J2 = lambda1 * tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
+                self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
                                             tf.matmul(tf.transpose(self.H_M_2), self.C))))
-            self.cost += J2
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
-        self.optimizer = optimize(self.cost, learning_rate, optimizer, decay, self.global_step)
+        self.saver = tf.train.Saver()
 
     def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
         weights, biases = [], []
@@ -124,9 +123,12 @@ class DeepSubspaceClustering:
 
         return weights, biases
 
-    def train(self, batch_size=100, epochs=100, print_step=100):
+    def train(self, lambda1=0.01, lambda2=0.01, lambda3=0.0, learning_rate=0.1, optimizer='Adam', \
+              decay='none', batch_size=100, epochs=100, print_step=100):
         if(self.verbose):
             print()
+        cost = self.J1 + lambda1 * self.J2 + lambda2 * self.J3 + lambda3 * self.J4
+        self.optimizer = optimize(cost, learning_rate, optimizer, decay, self.global_step)
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         batch_generator = GenBatch(self.inputX, C=self.inputC, batch_size=batch_size)
@@ -141,7 +143,7 @@ class DeepSubspaceClustering:
                 out=sess.run(self.optimizer, feed_dict={self.X: x_batch, self.C: c_batch})
                 self.inputC -= np.diag(np.diag(self.inputC))
 
-            self.losses.append(sess.run(self.cost, feed_dict={self.X: x_batch, self.C: c_batch}))
+            self.losses.append(sess.run(cost, feed_dict={self.X: x_batch, self.C: c_batch}))
 
             if(self.verbose and i % print_step == 0):
                 print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
@@ -154,6 +156,10 @@ class DeepSubspaceClustering:
 
         self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.trainedC], feed_dict={self.X: x_batch, self.C: c_batch})
         return sess
+
+    def save(path):
+        save_path = self.saver.save(sess, path)
+        print("Model saved in path: %s" % save_path)
 
 
     def _add_noise(self, x):
