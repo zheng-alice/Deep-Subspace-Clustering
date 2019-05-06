@@ -14,8 +14,8 @@ sess.close()
 
 class DeepSubspaceClustering:
 
-    def __init__(self, inputX, load_path=None, C=None, trainC=False, hidden_dims=[300,150,300], activation='tanh', \
-                 weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
+    def __init__(self, inputX, load_path=None, save_path=None, C=None, trainC=False, hidden_dims=[300,150,300], \
+                 activation='tanh', weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
                  weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
@@ -52,10 +52,21 @@ class DeepSubspaceClustering:
         self.X = self._add_noise(tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='X'))
 
         input_hidden = self.X
-        weights, biases = self.init_layer_weight(weight_init, hidden_dims, [weight_init_params[0]]*len(hidden_dims),
-                                                 [activation]*len(hidden_dims), lr=weight_init_params[1],
-                                                 batch_size=weight_init_params[2], sda_optimizer=sda_optimizer,
-                                                 sda_decay=sda_decay, sda_printstep=weight_init_params[3])
+        if (load_path is None):
+            weights, biases = self.init_layer_weight(weight_init, hidden_dims, [weight_init_params[0]]*len(hidden_dims),
+                                                     [activation]*len(hidden_dims), save_path=save_path, lr=weight_init_params[1],
+                                                     batch_size=weight_init_params[2], sda_optimizer=sda_optimizer,
+                                                     sda_decay=sda_decay, sda_printstep=weight_init_params[3])
+            if(save_path is not None):
+                np.savez(save_path, *weights, *biases)
+                print("\nModel saved to " + save_path + '.npz')
+        else:
+            npzfile = np.load(load_path+'.npz')
+            ndarrays = [npzfile['arr_'+str(i)] for i in range(len(npzfile))]
+            npzfile.close()
+            weights = ndarrays[:len(ndarrays)//2]
+            biases = ndarrays[len(ndarrays)//2:]
+            print("\nModel loaded from " + load_path)
 
         # J3 regularization term
         J3_list = []
@@ -97,9 +108,8 @@ class DeepSubspaceClustering:
                                             tf.matmul(tf.transpose(self.H_M_2), self.C))))
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
-        self.saver = tf.train.Saver()
 
-    def init_layer_weight(self, name, dims, epochs, activations, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
+    def init_layer_weight(self, name, dims, epochs, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
         weights, biases = [], []
         if name == 'sda-uniform':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay, self.verbose)
@@ -156,10 +166,6 @@ class DeepSubspaceClustering:
 
         self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.trainedC], feed_dict={self.X: x_batch, self.C: c_batch})
         return sess
-
-    def save(path):
-        save_path = self.saver.save(sess, path)
-        print("Model saved in path: %s" % save_path)
 
 
     def _add_noise(self, x):
