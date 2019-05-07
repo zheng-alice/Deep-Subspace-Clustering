@@ -7,14 +7,17 @@ from supporting_files.helpers import optimize
 class StackedDenoisingAutoencoder:
     """A stacked deep autoencoder with denoising capability"""
 
-    def __init__(self, dims=[100,100,100], epochs=[100,100,100], activations=['sigmoid']*3, noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, weight_init='default', optimizer="Adam", decay='none', verbose=True):
+    def __init__(self, dims=[100,100,100], epochs_max=[100,100,100], activations=['sigmoid']*3,
+                 noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, validation_step=-1,
+                 weight_init='default', optimizer="Adam", decay='none', verbose=True):
         self.print_step = print_step
+        self.validation_step = validation_step
         self.batch_size = batch_size
         self.lr = lr
         self.loss = loss
         self.activations = activations
         self.noise = noise
-        self.epochs = epochs
+        self.epochs = epochs_max
         self.dims = dims
         self.depth = len(dims)
         self.optimizer = optimizer
@@ -26,16 +29,16 @@ class StackedDenoisingAutoencoder:
         self.verbose = verbose
         # assert len(dims) == len(epochs)
 
-    def _fit(self, x):
+    def _fit(self, x, x_val=None):
         #modification: only run for half the weight layers
         #use the decoder weight values for the latter half
         for i in range(self.depth//2):
             if(self.verbose):
                 print('Layer {0}'.format(i + 1))
-            x = self._run(data_x=self._add_noise(x), activation=self.activations[i], data_x_=x,
-                         hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
-                         batch_size=self.batch_size, lr=self.lr, print_step=self.print_step,
-                         weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
+            x, x_val = self._run(data_x=self._add_noise(x), data_val=self._add_noise(x_val), activation=self.activations[i], data_x_=x,
+                                 data_val_=x_val, hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
+                                 batch_size=self.batch_size, lr=self.lr, print_step=self.print_step, validation_step=self.validation_step,
+                                 weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
         self.weights = self.weights_enc+list(reversed(self.weights_dec))
         self.biases = self.biases_enc+list(reversed(self.biases_dec))
     
@@ -67,7 +70,7 @@ class StackedDenoisingAutoencoder:
         self._fit(x)
         return self._transform(x)
 
-    def _run(self, data_x, data_x_, hidden_dim, activation, loss, lr, print_step, epochs, batch_size, weight_init, optimizer, decay):
+    def _run(self, data_x, data_x_, data_val, data_val_, hidden_dim, activation, loss, lr, print_step, validation_step, epochs, batch_size, weight_init, optimizer, decay):
         input_dim = len(data_x[0])
         if(self.verbose):
             print(str(input_dim) + " -> " + str(hidden_dim))
@@ -106,17 +109,23 @@ class StackedDenoisingAutoencoder:
         for i in range(epochs):
             b_x, b_x_ = self._get_batch(data_x, data_x_, batch_size)
             sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
-            if i % print_step == 0:
-                l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
-                if(self.verbose):
-                    print('epoch {0}: global loss = {1}'.format(i, l))
+            if print_step > 0:
+                if i % print_step == 0:
+                    l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
+                    if(self.verbose):
+                        print('epoch {0}: global loss = {1}'.format(i, l))
+            if data_val is not None and validation_step > 0:
+                if i % validation_step == 0:
+                    l = sess.run(loss, feed_dict={x: data_val, x_: data_val_})
+                    if(self.verbose):
+                        print('epoch {0}: validation loss = {1}'.format(i, l))
         # debug
         #print('Decoded', sess.run(decoded, feed_dict={x: data_x, x_: data_x_})[0])
         self.weights_enc.append(sess.run(encode['weights']))
         self.biases_enc.append(sess.run(encode['biases']))
         self.weights_dec.append(sess.run(decode['weights']))
         self.biases_dec.append(sess.run(decode['biases']))
-        return sess.run(encoded, feed_dict={x: data_x_})
+        return sess.run(encoded, feed_dict={x: data_x_}), sess.run(encoded, feed_dict={x: data_val_}) if data_val_ is not None else None
 
     def _get_batch(self, X, X_, size):
         a = np.random.choice(len(X), size, replace=False)

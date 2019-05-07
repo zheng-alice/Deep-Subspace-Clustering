@@ -199,7 +199,8 @@ def run_model(images_norm,
 
     d = dsc.DeepSubspaceClustering(images_norm, C=C, trainC=trainC, hidden_dims=[200, 150, 200], lambda1=lambda1,
                                    lambda2=lambda2, lambda3=lambda3, learning_rate=lr, weight_init='sda-normal',
-                                   weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
+                                   weight_init_params={'epochs_max':epochs_pretrain, 'lr':lr_pretrain,
+                                   'batch_size':images_norm.shape[0], 'sda_printstep':100},
                                    optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt',
                                    seed=seed, verbose=verbose)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
@@ -253,8 +254,9 @@ def run_ae(images_norm,
         suppress_mlab(mlab_kwargs)
 
     d = dsc.DeepSubspaceClustering(images_norm, C=None, trainC=False, hidden_dims=[200, 150, 200], lambda2=lambda2, learning_rate=lr,
-                                   weight_init='sda-normal', weight_init_params=[epochs_pretrain, lr_pretrain, images_norm.shape[0], 100],
-                                   optimizer='Adam', decay='sqrt', sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
+                                   weight_init='sda-normal', weight_init_params={'epochs_max':epochs_pretrain, 'lr':lr_pretrain,
+                                   'batch_size':images_norm.shape[0], 'sda_printstep':100}, optimizer='Adam', decay='sqrt',
+                                   sda_optimizer='Adam', sda_decay='sqrt', seed=seed, verbose=verbose)
     d.train(batch_size=images_norm.shape[0], epochs=epochs, print_step=25)
     images_HM2 = d.result
 

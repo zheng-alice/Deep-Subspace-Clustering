@@ -18,6 +18,7 @@ SSC_ADMM_v1.1/*
 !/SSC_ADMM_v1.1/SSC_modified.m
 !/SSC_ADMM_v1.1/svdDriversCompare.m
 !/SSC_ADMM_v1.1/isOctave.m
+!/SSC_ADMM_v1.1/scaleTest.xlsx
 
 # Octave and oct2py
 dir
@@ -29,5 +30,7 @@ data
 # Saved matrices for faster loading
 saved/raw/*
 saved/rescaled/*
+!saved/rescaled/Coil20.mat
+!saved/rescaled/YaleB.mat
 !/saved/**/*.txt
 figures/hyper_opt.mat

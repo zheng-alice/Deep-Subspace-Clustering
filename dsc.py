@@ -14,9 +14,14 @@ sess.close()
 
 class DeepSubspaceClustering:
 
-    def __init__(self, inputX, load_path=None, save_path=None, C=None, trainC=False, hidden_dims=[300,150,300], \
+    def __init__(self, inputX, inputX_val=None, load_path=None, save_path=None, C=None, trainC=False, hidden_dims=[300,150,300], \
                  activation='tanh', weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
-                 weight_init_params=[100, 0.001, 100, 100], seed=None, verbose=True):
+                 weight_init_params={'epochs_max': 100,
+                                     'lr': 0.001,
+                                     'batch_size': 100,
+                                     'sda_printstep': 100,
+                                     'validation_step': 10},
+                 seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
         np.random.seed(seed)
@@ -36,6 +41,7 @@ class DeepSubspaceClustering:
 
         # This is not the symbolic variable of tensorflow, this is real!
         self.inputX = inputX
+        self.inputX_val = inputX_val
 
         self.givenC = not C is None
         self.trainC = trainC
@@ -53,11 +59,13 @@ class DeepSubspaceClustering:
 
         input_hidden = self.X
         if (load_path is None):
-            weights, biases = self.init_layer_weight(weight_init, hidden_dims, [weight_init_params[0]]*len(hidden_dims),
-                                                     [activation]*len(hidden_dims), save_path=save_path, lr=weight_init_params[1],
-                                                     batch_size=weight_init_params[2], sda_optimizer=sda_optimizer,
-                                                     sda_decay=sda_decay, sda_printstep=weight_init_params[3])
+            weight_init_params['epochs'] = [weight_init_params['epochs']]*len(hidden_dims)
+            weights, biases = self.init_layer_weight(weight_init, hidden_dims,
+                                                     activations=[activation]*len(hidden_dims),
+                                                     save_path=save_path, sda_optimizer=sda_optimizer,
+                                                     sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
+                save_path.format(1)
                 np.savez(save_path, *weights, *biases)
                 print("\nModel saved to " + save_path + '.npz')
         else:
@@ -109,19 +117,19 @@ class DeepSubspaceClustering:
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
-    def init_layer_weight(self, name, dims, epochs, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100):
+    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'uniform', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'uniform', sda_optimizer, sda_decay, self.verbose)
+            sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         if name == 'sda-normal':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'normal', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'normal', sda_optimizer, sda_decay, self.verbose)
+            sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs, activations, noise, loss, lr, batch_size, sda_printstep, 'default', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'default', sda_optimizer, sda_decay, self.verbose)
+            sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':
             n_in = self.inputX.shape[1]
