@@ -89,3 +89,29 @@ def load_CIFAR10(path="./data/cifar-10-batches-py"):
     print("Elapsed: {0:.2f} sec".format(time.time()-start_time))
 
     return images, labels
+
+def split(data, fraction):
+    """ Splits the given data into two proportional sets. Selection is random, but points are kept in their original order.
+    
+        PARAMETERS
+        ---
+        data [ndarray]:
+            Data to split. The split is done along the 0th axis.
+        
+        fraction [double]:
+            Number in range [0, 1]. Corresponds to the amount of data in output array A.
+        
+        RETURNS
+        ---
+        A [ndarray]:
+            Contains N*fraction points.
+        
+        B [ndarray]:
+            Contains N*(1-fraction) points.
+        
+    """
+    assert 0 <= fraction <= 1, "Fraction must be between 0 and 1"
+    include_idx = np.random.choice(data.shape[0], round(data.shape[0]*fraction), replace=False)
+    mask = np.zeros(data.shape[0], dtype=bool)
+    mask[include_idx] = True
+    return data[mask], data[~mask]
