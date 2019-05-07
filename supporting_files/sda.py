@@ -32,15 +32,20 @@ class StackedDenoisingAutoencoder:
     def _fit(self, x, x_val=None):
         #modification: only run for half the weight layers
         #use the decoder weight values for the latter half
+        loss_total = 0
         for i in range(self.depth//2):
             if(self.verbose):
                 print('Layer {0}'.format(i + 1))
-            x, x_val = self._run(data_x=self._add_noise(x), data_val=self._add_noise(x_val), activation=self.activations[i], data_x_=x,
+            x, x_val, loss = self._run(data_x=self._add_noise(x), data_val=self._add_noise(x_val), activation=self.activations[i], data_x_=x,
                                  data_val_=x_val, hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
                                  batch_size=self.batch_size, lr=self.lr, print_step=self.print_step, validation_step=self.validation_step,
                                  weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
+            loss_total += loss
         self.weights = self.weights_enc+list(reversed(self.weights_dec))
         self.biases = self.biases_enc+list(reversed(self.biases_dec))
+        if(self.verbose):
+            print('Final combined validation loss = {0}'.format(loss_total))
+        return loss_total
     
     def _add_noise(self, x):
         if self.noise == 'gaussian':
@@ -106,26 +111,40 @@ class StackedDenoisingAutoencoder:
         train_op = optimize(loss, lr, optimizer, decay, tf.Variable(1, dtype=tf.float32, trainable=False))
 
         sess.run(tf.global_variables_initializer())
+        loss_v_best = float("inf")
+        enc_best = dec_best = None
         for i in range(epochs):
             b_x, b_x_ = self._get_batch(data_x, data_x_, batch_size)
             sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
             if print_step > 0:
                 if i % print_step == 0:
-                    l = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
+                    loss_g = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
                     if(self.verbose):
-                        print('epoch {0}: global loss = {1}'.format(i, l))
+                        print('epoch {0}: global loss = {1}'.format(i, loss_g))
             if data_val is not None and validation_step > 0:
                 if i % validation_step == 0:
-                    l = sess.run(loss, feed_dict={x: data_val, x_: data_val_})
+                    loss_v, enc, dec = sess.run([loss, encode, decode], feed_dict={x: data_val, x_: data_val_})
                     if(self.verbose):
-                        print('epoch {0}: validation loss = {1}'.format(i, l))
+                        print('epoch {0}: validation loss = {1}'.format(i, loss_v))
+                    if(loss_v < loss_v_best):
+                        loss_v_best = loss_v
+                        enc_best = enc
+                        dec_best = dec
+
         # debug
         #print('Decoded', sess.run(decoded, feed_dict={x: data_x, x_: data_x_})[0])
-        self.weights_enc.append(sess.run(encode['weights']))
-        self.biases_enc.append(sess.run(encode['biases']))
-        self.weights_dec.append(sess.run(decode['weights']))
-        self.biases_dec.append(sess.run(decode['biases']))
-        return sess.run(encoded, feed_dict={x: data_x_}), sess.run(encoded, feed_dict={x: data_val_}) if data_val_ is not None else None
+        if enc_best is None:
+            enc_best, dec_best = sess.run([encode, decode])
+        self.weights_enc.append(enc_best['weights'])
+        self.biases_enc.append(enc_best['biases'])
+        self.weights_dec.append(dec_best['weights'])
+        self.biases_dec.append(dec_best['biases'])
+        # replace current weights with best
+        sess.run([tf.assign(encode['weights'], tf.convert_to_tensor(enc_best['weights'], dtype=tf.float32)),
+                  tf.assign(encode['biases'], tf.convert_to_tensor(enc_best['biases'], dtype=tf.float32)),
+                  tf.assign(decode['weights'], tf.convert_to_tensor(dec_best['weights'], dtype=tf.float32)),
+                  tf.assign(decode['biases'], tf.convert_to_tensor(dec_best['biases'], dtype=tf.float32))])
+        return sess.run(encoded, feed_dict={x: data_x_}), sess.run(encoded, feed_dict={x: data_val_}) if data_val_ is not None else None, loss_v_best
 
     def _get_batch(self, X, X_, size):
         a = np.random.choice(len(X), size, replace=False)

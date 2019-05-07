@@ -59,22 +59,23 @@ class DeepSubspaceClustering:
 
         input_hidden = self.X
         if (load_path is None):
-            weight_init_params['epochs'] = [weight_init_params['epochs']]*len(hidden_dims)
-            weights, biases = self.init_layer_weight(weight_init, hidden_dims,
-                                                     activations=[activation]*len(hidden_dims),
-                                                     save_path=save_path, sda_optimizer=sda_optimizer,
-                                                     sda_decay=sda_decay, **weight_init_params)
+            if('epochs_max' in weight_init_params):
+                weight_init_params['epochs_max'] = [weight_init_params['epochs_max']]*len(hidden_dims)
+            weights, biases, loss = self.init_layer_weight(weight_init, hidden_dims,
+                                                           activations=[activation]*len(hidden_dims),
+                                                           save_path=save_path, sda_optimizer=sda_optimizer,
+                                                           sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
-                save_path.format(1)
+                save_path.format(loss)
                 np.savez(save_path, *weights, *biases)
                 print("\nModel saved to " + save_path + '.npz')
         else:
-            npzfile = np.load(load_path+'.npz')
+            npzfile = np.load(load_path + '.npz')
             ndarrays = [npzfile['arr_'+str(i)] for i in range(len(npzfile))]
             npzfile.close()
             weights = ndarrays[:len(ndarrays)//2]
             biases = ndarrays[len(ndarrays)//2:]
-            print("\nModel loaded from " + load_path)
+            print("\nModel loaded from " + load_path + '.npz')
 
         # J3 regularization term
         J3_list = []
@@ -121,15 +122,15 @@ class DeepSubspaceClustering:
         weights, biases = [], []
         if name == 'sda-uniform':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'uniform', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX, self.inputX_val)
+            loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         if name == 'sda-normal':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'normal', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX, self.inputX_val)
+            loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'default', sda_optimizer, sda_decay, self.verbose)
-            sda._fit(self.inputX, self.inputX_val)
+            loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':
             n_in = self.inputX.shape[1]
@@ -139,7 +140,7 @@ class DeepSubspaceClustering:
                 biases.append(tf.Variable(tf.zeros([d,])))
                 n_in = d
 
-        return weights, biases
+        return weights, biases, loss
 
     def train(self, lambda1=0.01, lambda2=0.01, lambda3=0.0, learning_rate=0.1, optimizer='Adam', \
               decay='none', batch_size=100, epochs=100, print_step=100):
