@@ -18,7 +18,7 @@ class DeepSubspaceClustering:
                  activation='tanh', weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
                  weight_init_params={'epochs_max': 100,
                                      'lr': 0.001,
-                                     'batch_size': 100,
+                                     'batch_num': 1,
                                      'sda_printstep': 100,
                                      'validation_step': 10,
                                      'stop_criteria': 3},
@@ -120,18 +120,18 @@ class DeepSubspaceClustering:
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
-    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10, stop_criteria=3):
+    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_num=1, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10, stop_criteria=3):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'uniform', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_num, sda_printstep, validation_step, stop_criteria, 'uniform', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         if name == 'sda-normal':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'normal', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_num, sda_printstep, validation_step, stop_criteria, 'normal', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'default', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_num, sda_printstep, validation_step, stop_criteria, 'default', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':
@@ -145,19 +145,19 @@ class DeepSubspaceClustering:
         return weights, biases, loss
 
     def train(self, lambda1=0.01, lambda2=0.01, lambda3=0.0, learning_rate=0.1, optimizer='Adam', \
-              decay='none', batch_size=100, epochs=100, print_step=100):
+              decay='none', batch_num=1, epochs=100, print_step=100):
         if(self.verbose):
             print()
         cost = self.J1 + lambda1 * self.J2 + lambda2 * self.J3 + lambda3 * self.J4
         self.optimizer = optimize(cost, learning_rate, optimizer, decay, self.global_step)
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
-        batch_generator = GenBatch(self.inputX, C=self.inputC, batch_size=batch_size)
+        batch_generator = GenBatch(self.inputX, C=self.inputC, batch_num=batch_num)
         n_batch = batch_generator.n_batch
 
         self.losses = []
         for i in range(epochs):
-            # x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_size)
+            # x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_num)
             batch_generator.resetIndex()
             for j in range(int(n_batch+1)):
                 x_batch, c_batch = batch_generator.get_batch()
@@ -170,7 +170,7 @@ class DeepSubspaceClustering:
                 print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
         # for i in range(1, epochs+1):
-        #     x_batch, c_batch = get_batch_XC(self.inputX, self.inputC, batch_size)  
+        #     x_batch, c_batch = get_batch_XC(self.inputX, self.inputC, batch_num)  
         #     self.losses.append(sess.run(self.cost, feed_dict={self.X: x_batch, self.C: c_batch}))      
         #     if i % print_step == 0:
         #         print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))

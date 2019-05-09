@@ -8,12 +8,12 @@ class StackedDenoisingAutoencoder:
     """A stacked deep autoencoder with denoising capability"""
 
     def __init__(self, dims=[100,100,100], epochs_max=[100,100,100], activations=['sigmoid']*3,
-                 noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, validation_step=-1,
+                 noise=None, loss='rmse', lr=0.001, batch_num=1, print_step=10, validation_step=-1,
                  stop_crteria=-1, weight_init='default', optimizer="Adam", decay='none', verbose=True):
         self.print_step = print_step
         self.validation_step = validation_step
         self.stop_criteria = stop_crteria
-        self.batch_size = batch_size
+        self.batch_num = batch_num
         self.lr = lr
         self.loss = loss
         self.activations = activations
@@ -39,7 +39,7 @@ class StackedDenoisingAutoencoder:
                 print('Layer {0}'.format(i + 1))
             x, x_val, loss = self._run(data_x=self._add_noise(x), data_val=self._add_noise(x_val), activation=self.activations[i], data_x_=x,
                                  data_val_=x_val, hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
-                                 batch_size=self.batch_size, lr=self.lr, print_step=self.print_step, validation_step=self.validation_step,
+                                 batch_num=self.batch_num, lr=self.lr, print_step=self.print_step, validation_step=self.validation_step,
                                  stop_criteria=self.stop_criteria, weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
             loss_total += loss
         self.weights = self.weights_enc+list(reversed(self.weights_dec))
@@ -75,7 +75,7 @@ class StackedDenoisingAutoencoder:
         self._fit(x)
         return self._transform(x)
 
-    def _run(self, data_x, data_x_, data_val, data_val_, hidden_dim, activation, loss, lr, print_step, validation_step, stop_criteria, epochs, batch_size, weight_init, optimizer, decay):
+    def _run(self, data_x, data_x_, data_val, data_val_, hidden_dim, activation, loss, lr, print_step, validation_step, stop_criteria, epochs, batch_num, weight_init, optimizer, decay):
         input_dim = len(data_x[0])
         if(self.verbose):
             print(str(input_dim) + " -> " + str(hidden_dim))
@@ -116,8 +116,9 @@ class StackedDenoisingAutoencoder:
         consec_increases = 0
         enc_best = dec_best = None
         for i in range(epochs):
-            b_x, b_x_ = self._get_batch(data_x, data_x_, batch_size)
-            sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
+            bs_x, bs_x_ = self._get_batches(data_x, data_x_, batch_num)
+            for b_x, b_x_ in zip(bs_x, bs_x_):
+                sess.run(train_op, feed_dict={x: b_x, x_: b_x_})
             if print_step > 0:
                 if i % print_step == 0:
                     loss_g = sess.run(loss, feed_dict={x: data_x, x_: data_x_})
@@ -163,6 +164,12 @@ class StackedDenoisingAutoencoder:
     def _get_batch(self, X, X_, size):
         a = np.random.choice(len(X), size, replace=False)
         return X[a], X_[a]
+
+    def _get_batches(self, X, X_, batch_num):
+        indx = np.array(range(len(X)))
+        np.random.shuffle(indx)
+        indx_split = np.array_split(indx, batch_num)
+        return [X[indx] for indx in indx_split], [X_[indx] for indx in indx_split]
 
     def activate(self, linear, name):
         if name == 'sigmoid':
