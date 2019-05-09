@@ -17,7 +17,10 @@ def activate(layer, name):
 
 def optimize(cost, learning_rate_initial, optimizer, decay, global_step):
     optimizer = {'FTRL':tf.train.FtrlOptimizer, 'Adam':tf.train.AdamOptimizer, \
-                 'SGD':tf.train.GradientDescentOptimizer}[optimizer]
+                 'SGD':tf.train.GradientDescentOptimizer,
+                 'Adadelta':tf.train.AdadeltaOptimizer,
+                 'RMSProp':tf.train.RMSPropOptimizer,
+                 'Momentum':tf.train.MomentumOptimizer}[optimizer]
     if decay == 'none':
         learning_rate = learning_rate_initial
     elif decay == 'sqrt':

@@ -30,7 +30,8 @@ data
 # Saved matrices for faster loading
 saved/raw/*
 saved/rescaled/*
+saved/models/**/test_*.npz
 !saved/rescaled/Coil20.mat
 !saved/rescaled/YaleB.mat
-!/saved/**/*.txt
+!saved/**/*.txt
 figures/hyper_opt.mat
