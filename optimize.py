@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import random
 import time
 import sys
 import warnings
@@ -124,7 +125,7 @@ def objective(hyper_params):
         global seed_, verb_model_
         try:
             all_params.update(hyper_params)
-            return all_params.pop('model')(seed=seed_, verbose=verb_model_, **all_params)[0]
+            return all_params.pop('model')(seed=random.randrange(1000) if seed_ is None else seed_, verbose=verb_model_, **all_params)[0]
         except Exception as ex:
             if(type(ex) == KeyError):
                 raise ex
@@ -174,7 +175,8 @@ def optimize(function, opt_params, iterations, random_seed=None, verb_model=Fals
             Number of iterations to run the model for.
 
         random_seed [int or None, default=None]:
-            Passed to the optimizer and the model.
+            Passed to the optimizer.
+            Used to seed the sequience of model seeds.
         
         verb_model [bool, default=False]:
             Whether to pass verbose=True to the model.
@@ -193,7 +195,8 @@ def optimize(function, opt_params, iterations, random_seed=None, verb_model=Fals
     # global b/c I couldn't find a better way to directly pass these to the objective function
     global opt_params_, seed_, verb_model_
     opt_params_ = opt_params
-    seed_ = random_seed
+    seed_ = None
+    random.seed(random_seed)
     verb_model_ = verb_model
     
     # kwargs b/c dummy_minimize can not take n_jobs
@@ -274,7 +277,8 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
             Number of additional iterations to run the model for.
 
         random_seed [int or None, default=None]:
-            Passed to the optimizer and the model.
+            Passed to the optimizer.
+            Used to seed the sequience of model seeds.
         
         verb_model [bool, default=False]:
             Whether to pass verbose=True to the model.
@@ -297,7 +301,8 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
     # since objective relies on global variables, set them again
     global opt_params_, seed_, verb_model_
     opt_params_ = opt_params
-    seed_ = random_seed
+    seed_ = None
+    random.seed(random_seed)
     verb_model_ = verb_model
     
     # retrieve optimization call's arguments
