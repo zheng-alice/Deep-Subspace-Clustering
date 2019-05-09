@@ -20,7 +20,8 @@ class DeepSubspaceClustering:
                                      'lr': 0.001,
                                      'batch_size': 100,
                                      'sda_printstep': 100,
-                                     'validation_step': 10},
+                                     'validation_step': 10,
+                                     'stop_criteria': 3},
                  seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
@@ -66,16 +67,17 @@ class DeepSubspaceClustering:
                                                            save_path=save_path, sda_optimizer=sda_optimizer,
                                                            sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
-                save_path.format(loss)
+                save_path = save_path.format(loss)
                 np.savez(save_path, *weights, *biases)
                 print("\nModel saved to " + save_path + '.npz')
         else:
-            npzfile = np.load(load_path + '.npz')
+            load_path += '.npz'
+            npzfile = np.load(load_path)
             ndarrays = [npzfile['arr_'+str(i)] for i in range(len(npzfile))]
             npzfile.close()
             weights = ndarrays[:len(ndarrays)//2]
             biases = ndarrays[len(ndarrays)//2:]
-            print("\nModel loaded from " + load_path + '.npz')
+            print("\nModel loaded from " + load_path)
 
         # J3 regularization term
         J3_list = []
@@ -118,18 +120,18 @@ class DeepSubspaceClustering:
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
-    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10):
+    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_size=100, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10, stop_criteria=3):
         weights, biases = [], []
         if name == 'sda-uniform':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'uniform', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'uniform', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         if name == 'sda-normal':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'normal', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'normal', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'sda':
-            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, 'default', sda_optimizer, sda_decay, self.verbose)
+            sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_size, sda_printstep, validation_step, stop_criteria, 'default', sda_optimizer, sda_decay, self.verbose)
             loss = sda._fit(self.inputX, self.inputX_val)
             weights, biases = sda.weights, sda.biases
         elif name == 'uniform':

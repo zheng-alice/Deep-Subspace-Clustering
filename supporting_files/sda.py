@@ -9,9 +9,10 @@ class StackedDenoisingAutoencoder:
 
     def __init__(self, dims=[100,100,100], epochs_max=[100,100,100], activations=['sigmoid']*3,
                  noise=None, loss='rmse', lr=0.001, batch_size=100, print_step=10, validation_step=-1,
-                 weight_init='default', optimizer="Adam", decay='none', verbose=True):
+                 stop_crteria=-1, weight_init='default', optimizer="Adam", decay='none', verbose=True):
         self.print_step = print_step
         self.validation_step = validation_step
+        self.stop_criteria = stop_crteria
         self.batch_size = batch_size
         self.lr = lr
         self.loss = loss
@@ -39,12 +40,11 @@ class StackedDenoisingAutoencoder:
             x, x_val, loss = self._run(data_x=self._add_noise(x), data_val=self._add_noise(x_val), activation=self.activations[i], data_x_=x,
                                  data_val_=x_val, hidden_dim=self.dims[i], epochs=self.epochs[i], loss=self.loss, 
                                  batch_size=self.batch_size, lr=self.lr, print_step=self.print_step, validation_step=self.validation_step,
-                                 weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
+                                 stop_criteria=self.stop_criteria, weight_init=self.weight_init, optimizer=self.optimizer, decay=self.decay)
             loss_total += loss
         self.weights = self.weights_enc+list(reversed(self.weights_dec))
         self.biases = self.biases_enc+list(reversed(self.biases_dec))
-        if(self.verbose):
-            print('Final combined validation loss = {0}'.format(loss_total))
+        print('Final combined validation loss = {0}'.format(loss_total))
         return loss_total
     
     def _add_noise(self, x):
@@ -75,7 +75,7 @@ class StackedDenoisingAutoencoder:
         self._fit(x)
         return self._transform(x)
 
-    def _run(self, data_x, data_x_, data_val, data_val_, hidden_dim, activation, loss, lr, print_step, validation_step, epochs, batch_size, weight_init, optimizer, decay):
+    def _run(self, data_x, data_x_, data_val, data_val_, hidden_dim, activation, loss, lr, print_step, validation_step, stop_criteria, epochs, batch_size, weight_init, optimizer, decay):
         input_dim = len(data_x[0])
         if(self.verbose):
             print(str(input_dim) + " -> " + str(hidden_dim))
@@ -112,6 +112,8 @@ class StackedDenoisingAutoencoder:
 
         sess.run(tf.global_variables_initializer())
         loss_v_best = float("inf")
+        loss_v_prev = float("inf")
+        consec_increases = 0
         enc_best = dec_best = None
         for i in range(epochs):
             b_x, b_x_ = self._get_batch(data_x, data_x_, batch_size)
@@ -127,9 +129,21 @@ class StackedDenoisingAutoencoder:
                     if(self.verbose):
                         print('epoch {0}: validation loss = {1}'.format(i, loss_v))
                     if(loss_v < loss_v_best):
+                        # save reference to best weights
                         loss_v_best = loss_v
                         enc_best = enc
                         dec_best = dec
+                    if(stop_criteria > 0):
+                        if(loss_v > loss_v_prev):
+                            consec_increases += 1
+                            if(consec_increases >= stop_criteria):
+                                print("Training stopped after {0} epochs with loss = {1}".format(i, loss_v_best))
+                                break
+                        else:
+                            consec_increases = 0
+                        loss_v_prev = loss_v
+        if(stop_criteria <= 0 or consec_increases < stop_criteria):
+            print("Training exceeded max limit of {0} epochs".format(i+1))
 
         # debug
         #print('Decoded', sess.run(decoded, feed_dict={x: data_x, x_: data_x_})[0])
