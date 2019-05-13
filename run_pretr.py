@@ -30,4 +30,4 @@ opt_params['inputX'] = data_loaded['X']
 opt_params['inputX_val'] = data_loaded['X_val']
 
 result = optimize(forest_minimize, opt_params, 100, random_seed=0, verb_model=False, verb=True)
-dump(result, "optims/pretrain/256.64_10.3.opt")
+dump(result, "optims/pretrain/256.64_10000.10.3.opt")
