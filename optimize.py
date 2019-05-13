@@ -6,7 +6,7 @@ import time
 import sys
 import warnings
 from copy import copy, deepcopy
-from params import all_params
+#from params import all_params
 from pathlib import Path
 from pympler.asizeof import asizeof
 from scipy.io import savemat, loadmat
@@ -172,7 +172,7 @@ def optimize(function, opt_params, iterations, random_seed=None, verb_model=Fals
             Any additional entries will be passed to the model.
 
         iterations [int]:
-            Number of iterations to run the model for.
+            Number of iterations to run the optimization for.
 
         random_seed [int or None, default=None]:
             Passed to the optimizer.
@@ -274,7 +274,7 @@ def reload(result, opt_params, addtl_iters, random_seed=None, verb_model=False, 
             Any additional entries will be passed to the model.
 
         addtl_iters [int]:
-            Number of additional iterations to run the model for.
+            Number of additional iterations to run the optimization for.
 
         random_seed [int or None, default=None]:
             Passed to the optimizer.
@@ -369,7 +369,7 @@ def optimize_multiple(scenario, iterations, seeds=range(5), functions={"gp":gp_m
             Determines the directory to save in.
 
         iterations [int]:
-            Number of iterations to run the model for.
+            Number of iterations to run the optimization for.
             Used in filenames upon saving.
 
         seeds [list of int]:
@@ -406,7 +406,7 @@ def reload_multiple(scenario, init_iters, addtl_iters, seeds=range(5), func_name
             Iteration count of optimizations to load.
 
         addtl_iters [int]:
-            Number of additional iterations to run the model for.
+            Number of additional iterations to run the optimization for.
             New total is used in filenames upon saving.
 
         seeds [list of int]:

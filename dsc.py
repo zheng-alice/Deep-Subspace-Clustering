@@ -2,6 +2,7 @@ import supporting_files.sda
 import tensorflow as tf
 import numpy as np
 import os
+from copy import copy
 from supporting_files.nncomponents import *
 from supporting_files.helpers import *
 
@@ -17,12 +18,10 @@ class DeepSubspaceClustering:
     def __init__(self, inputX, inputX_val=None, load_path=None, save_path=None, C=None, trainC=False, hidden_dims=[300,150,300], \
                  activation='tanh', weight_init='uniform', noise=None, sda_optimizer='Adam', sda_decay='none', \
                  weight_init_params={'epochs_max': 100,
-                                     'lr': 0.001,
-                                     'batch_num': 1,
                                      'sda_printstep': 100,
                                      'validation_step': 10,
                                      'stop_criteria': 3},
-                 seed=None, verbose=True):
+                 lr=0.001, batch_num=1, seed=None, verbose=True):
         tf.reset_default_graph()
         tf.set_random_seed(seed)
         np.random.seed(seed)
@@ -31,6 +30,10 @@ class DeepSubspaceClustering:
 
         self.noise = noise
         n_sample, n_feat = inputX.shape
+
+        # avoid overwriting parameters
+        hidden_dims = copy(hidden_dims)
+        weight_init_params = copy(weight_init_params)
 
         # M must be a even number
         assert len(hidden_dims) % 2 == 1
@@ -59,15 +62,16 @@ class DeepSubspaceClustering:
         self.X = self._add_noise(tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='X'))
 
         input_hidden = self.X
+        self.pre_loss = 1.0
         if (load_path is None):
             if('epochs_max' in weight_init_params):
                 weight_init_params['epochs_max'] = [weight_init_params['epochs_max']]*len(hidden_dims)
-            weights, biases, loss = self.init_layer_weight(weight_init, hidden_dims,
+            weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims,
                                                            activations=[activation]*len(hidden_dims),
                                                            save_path=save_path, sda_optimizer=sda_optimizer,
                                                            sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
-                save_path = save_path.format(loss)
+                save_path = save_path.format(self.pre_loss)
                 np.savez(save_path, *weights, *biases)
                 print("\nModel saved to " + save_path + '.npz')
         else:

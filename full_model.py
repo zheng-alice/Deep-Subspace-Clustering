@@ -49,8 +49,9 @@ else:
 
 #from load import load_YaleB
 #images, labels = load_YaleB()
+#from scipy.io import savemat
 #savemat('./saved/raw/yaleB.mat', mdict={'X':images, 'Y':labels})
-#images_norm = rescale(images)
+#images_norm = flatten(rescale(images))
 #images_norm_val, images_norm = split(images_norm, 0.2) # only do this once
 #labels_val, labels = split(labels, 0.2)                # if loading pre-trained models, load the partitioned 'rescaled' data
 #savemat('./saved/rescaled/yaleB.mat', mdict={'X':images_norm, 'Y':labels, 'X_val':images_norm_val, 'Y_val':labels_val})
@@ -62,6 +63,10 @@ else:
 #images_norm_val = data_loaded['X_val']
 #labels_val = data_loaded['Y_val'].reshape(-1)
 #run_model(images_norm, labels)
+
+def flatten(images):
+    images_flat = images.reshape(images.shape[0], -1)
+    return images_flat
 
 def rescale(images):
     maxdim = max(images.shape[1:])
