@@ -66,8 +66,8 @@ class DeepSubspaceClustering:
         if (load_path is None):
             if('epochs_max' in weight_init_params):
                 weight_init_params['epochs_max'] = [weight_init_params['epochs_max']]*len(hidden_dims)
-            weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims,
-                                                           activations=[activation]*len(hidden_dims),
+            weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims, batch_num=batch_num,
+                                                           lr=lr, activations=[activation]*len(hidden_dims),
                                                            save_path=save_path, sda_optimizer=sda_optimizer,
                                                            sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
@@ -124,7 +124,7 @@ class DeepSubspaceClustering:
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
-    def init_layer_weight(self, name, dims, epochs_max, activations, save_path=None, noise=None, loss='rmse', lr=0.001, batch_num=1, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10, stop_criteria=3):
+    def init_layer_weight(self, name, dims, epochs_max, activations, noise=None, loss='rmse', lr=0.001, batch_num=1, sda_optimizer='Adam', sda_decay='none', sda_printstep=100, validation_step=10, stop_criteria=3):
         weights, biases = [], []
         if name == 'sda-uniform':
             sda = supporting_files.sda.StackedDenoisingAutoencoder(dims, epochs_max, activations, noise, loss, lr, batch_num, sda_printstep, validation_step, stop_criteria, 'uniform', sda_optimizer, sda_decay, self.verbose)
