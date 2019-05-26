@@ -68,7 +68,7 @@ class DeepSubspaceClustering:
                 weight_init_params['epochs_max'] = [weight_init_params['epochs_max']]*len(hidden_dims)
             weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims, batch_num=batch_num,
                                                            lr=lr, activations=[activation]*len(hidden_dims),
-                                                           save_path=save_path, sda_optimizer=sda_optimizer,
+                                                            sda_optimizer=sda_optimizer,
                                                            sda_decay=sda_decay, **weight_init_params)
             if(save_path is not None):
                 save_path = save_path.format(self.pre_loss)
