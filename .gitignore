@@ -18,7 +18,7 @@ SSC_ADMM_v1.1/*
 !/SSC_ADMM_v1.1/SSC_modified.m
 !/SSC_ADMM_v1.1/svdDriversCompare.m
 !/SSC_ADMM_v1.1/isOctave.m
-!/SSC_ADMM_v1.1/scaleTest.xlsx
+!/SSC_ADMM_v1.1/scaleTest.m
 
 # Octave and oct2py
 dir

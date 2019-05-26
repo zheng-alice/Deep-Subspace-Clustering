@@ -1,11 +1,13 @@
 clear variables;
-load ../saved/rescaled/Coil20
+load ../saved/rescaled/CIFAR10
 X = double(X');
 
-result = zeros(10, 3);
-for p = 1:10
+range = 5:10;
+n = 30;
+
+result = zeros(max(range), 3);
+for p = range
     N = 2^p;
-    n = 30;
     err_sum = 0;
     err_mean = 0;
     for i = 1:n
@@ -22,28 +24,23 @@ for p = 1:10
     result(p, :) = [p, log2(err_mean), log2(err_sum)];
 end
 
-plot(result(:, 1), result(:, 2), result(:, 1), result(:, 3));
-fprintf('Mean: log2(E_m) = %f*log2(N) + %f\n', polyfit(result(:, 1), result(:, 2), 1));
-fprintf('Sum: log2(E_s) = %f*log2(N) + %f\n', polyfit(result(:, 1), result(:, 3), 1));
+plot(result(range, 1), result(range, 2), result(range, 1), result(range, 3));
+fprintf('Mean: log2(E_m) = %f*log2(N) + %f\n', polyfit(result(range, 1), result(range, 2), 1));
+fprintf('Sum: log2(E_s) = %f*log2(N) + %f\n', polyfit(result(range, 1), result(range, 3), 1));
 
-% n=30
-% p=1:10
+% rescaled
+% range = 5:10;
+% n = 30;
 
-% yaleB (processed):
-% Mean: log2(E_m) = -0.066119*log2(N) + -10.781865
-% Sum: log2(E_s) = 1.933881*log2(N) + -10.781865
-% Coil20 (processed):
-% Mean: log2(E_m) = -0.686837*log2(N) + -4.337824
-% Sum: log2(E_s) = 1.313163*log2(N) + -4.337824
-% yaleB (rescaled):
-% ...
-% ...
-% Coil20 (rescaled):
-% Mean: log2(E_m) = -0.695614*log2(N) + -3.998875
-% Sum: log2(E_s) = 1.304386*log2(N) + -3.998875
-% MNIST (rescaled):
-% ...
-% ...
-% CIFAR10 (rescaled):
-% ...
-% ...
+% yaleB:
+% Mean: log2(E_m) = -0.891821*log2(N) + -2.995528
+% Sum: log2(E_s) = 1.108179*log2(N) + -2.995528
+% Coil20:
+% Mean: log2(E_m) = -0.890098*log2(N) + -2.511976
+% Sum: log2(E_s) = 1.109902*log2(N) + -2.511976
+% MNIST:
+% Mean: log2(E_m) = -1.015780*log2(N) + -2.891591
+% Sum: log2(E_s) = 0.984220*log2(N) + -2.891591
+% CIFAR10:
+% Mean: log2(E_m) = -0.918135*log2(N) + -5.456893
+% Sum: log2(E_s) = 1.081865*log2(N) + -5.456893
