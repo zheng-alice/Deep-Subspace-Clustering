@@ -4,6 +4,7 @@ cvxpy.egg-info
 .vscode
 *.pyc
 *.asv
+*.ini
 .DS_Store
 Thumbs.db
 nohup.out
