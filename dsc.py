@@ -11,7 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # print any active GPUs
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-sess.close() 
+sess.close()
 
 class DeepSubspaceClustering:
 
@@ -47,6 +47,7 @@ class DeepSubspaceClustering:
         self.inputX = inputX
         self.inputX_val = inputX_val
 
+        # numpy ndarrays
         self.givenC = not C is None
         self.trainC = trainC
         if self.givenC:
@@ -55,21 +56,25 @@ class DeepSubspaceClustering:
             self.inputC = np.random.normal(0.0, np.sqrt(1.0 / self.inputX.shape[0]), (self.inputX.shape[0], self.inputX.shape[0]))
             self.inputC -= np.diag(np.diag(self.inputC))
 
-        self.C = tf.placeholder(dtype=tf.float32, shape=[None, None], name='C')
-        self.trainedC = tf.matrix_set_diag(tf.Variable(self.inputC, dtype=tf.float32), tf.zeros(self.inputX.shape[0]))
+        # tensorflow Tensors
+        self.C = tf.Variable(self.inputC, dtype=tf.float32, name='C')
+        self.C_indxs = tf.placeholder(dtype=tf.int32, shape=[None], name='C_indxs')
+        C_batch = tf.gather(self.C, self.C_indxs)
 
         self.hidden_layers = []
+        # one for beginning, one for end -> solves batches with C-layer
         self.X = self._add_noise(tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='X'))
+        self.X2 = self._add_noise(tf.placeholder(dtype=tf.float32, shape=[None, n_feat], name='X2'))
 
         input_hidden = self.X
         self.pre_loss = 1.0
         if (load_path is None):
             if('epochs_max' in weight_init_params):
                 weight_init_params['epochs_max'] = [weight_init_params['epochs_max']]*len(hidden_dims)
-            weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims, batch_num=batch_num,
+            weights, biases, self.pre_loss = self.init_layer_weight(weight_init, hidden_dims,
                                                            lr=lr, activations=[activation]*len(hidden_dims),
-                                                           save_path=save_path, sda_optimizer=sda_optimizer,
-                                                           sda_decay=sda_decay, **weight_init_params)
+                                                           sda_optimizer=sda_optimizer, sda_decay=sda_decay,
+                                                           batch_num=batch_num, **weight_init_params)
             if(save_path is not None):
                 save_path = save_path.format(self.pre_loss)
                 np.savez(save_path, *weights, *biases)
@@ -92,7 +97,7 @@ class DeepSubspaceClustering:
             J3_list.append(tf.reduce_mean(tf.square(self.hidden_layers[-1].b)))
         #self-expressive layer
         if(self.trainC):
-            input_hidden = tf.matmul(self.trainedC, input_hidden)
+            input_hidden = tf.matmul(C_batch, input_hidden)
             self.H_M_2_post = input_hidden
         for init_w, init_b in zip(weights[len(weights)//2:], biases[len(weights)//2:]):
             self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
@@ -109,18 +114,17 @@ class DeepSubspaceClustering:
         # calculate loss J1
         # self.J1 = tf.nn.l2_loss(tf.subtract(self.X, self.H_M))
 
-        self.J1 = tf.reduce_mean(tf.square(tf.subtract(self.X, self.H_M)))
+        self.J1 = tf.reduce_mean(tf.square(tf.subtract(self.X2, self.H_M)))
 
         # calculate loss J2
         self.J2 = 0
         self.J4 = 0
-        if self.givenC or self.trainC:
-            if self.trainC:
-                self.J2 = tf.reduce_mean(tf.square(tf.subtract(self.H_M_2, self.H_M_2_post)))
-                self.J4 = tf.reduce_mean(tf.square(self.trainedC))
-            else:
-                self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
-                                            tf.matmul(tf.transpose(self.H_M_2), self.C))))
+        if self.trainC:
+            self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.gather(self.H_M_2, self.C_indxs), self.H_M_2_post)))
+            self.J4 = tf.reduce_mean(tf.square(C_batch))
+        elif self.givenC:
+            self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
+                                        tf.matmul(tf.transpose(self.H_M_2), C_batch))))
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
@@ -156,19 +160,15 @@ class DeepSubspaceClustering:
         self.optimizer = optimize(cost, learning_rate, optimizer, decay, self.global_step)
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
-        batch_generator = GenBatch(self.inputX, C=self.inputC, batch_num=batch_num)
-        n_batch = batch_generator.n_batch
 
         self.losses = []
         for i in range(epochs):
-            # x_batch, y_batch = get_batch(self.X_train, self.y_train, batch_num)
-            batch_generator.resetIndex()
-            for j in range(int(n_batch+1)):
-                x_batch, c_batch = batch_generator.get_batch()
-                out=sess.run(self.optimizer, feed_dict={self.X: x_batch, self.C: c_batch})
-                self.inputC -= np.diag(np.diag(self.inputC))
+            batch = self._get_batches(len(self.inputX), batch_num=batch_num)
+            for indx in batch:
+                x_batch = self.inputX[indx]
+                out=sess.run(self.optimizer, feed_dict={self.X: self.inputX if self.trainC else x_batch, self.X2: x_batch, self.C_indxs: indx})
 
-            self.losses.append(sess.run(cost, feed_dict={self.X: x_batch, self.C: c_batch}))
+            self.losses.append(sess.run(cost, feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))}))
 
             if(self.verbose and i % print_step == 0):
                 print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
@@ -179,9 +179,14 @@ class DeepSubspaceClustering:
         #     if i % print_step == 0:
         #         print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
-        self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.trainedC], feed_dict={self.X: x_batch, self.C: c_batch})
+        self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.C], feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))})
         return sess
 
+    def _get_batches(self, N, batch_num):
+        indx = np.array(range(N))
+        np.random.shuffle(indx)
+        indx_split = np.array_split(indx, batch_num)
+        return indx_split
 
     def _add_noise(self, x):
         if self.noise is None:
