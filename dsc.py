@@ -153,7 +153,7 @@ class DeepSubspaceClustering:
         return weights, biases, loss
 
     def train(self, lambda1=0.01, lambda2=0.01, lambda3=0.0, learning_rate=0.1, optimizer='Adam', \
-              decay='none', batch_num=1, epochs=100, print_step=100):
+              decay='none', batch_num=1, epochs=100, print_step=100, validation_step=-1, stop_criteria=-1):
         if(self.verbose):
             print()
         cost = self.J1 + lambda1 * self.J2 + lambda2 * self.J3 + lambda3 * self.J4
@@ -161,17 +161,40 @@ class DeepSubspaceClustering:
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        self.losses = []
+        loss_v_prev = float("inf")
+        loss_v_best = float("inf")
+        consec_increases = 0
         for i in range(epochs):
             batch = self._get_batches(len(self.inputX), batch_num=batch_num)
             for indx in batch:
                 x_batch = self.inputX[indx]
                 out=sess.run(self.optimizer, feed_dict={self.X: self.inputX if self.trainC else x_batch, self.X2: x_batch, self.C_indxs: indx})
-
-            self.losses.append(sess.run(cost, feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))}))
-
-            if(self.verbose and i % print_step == 0):
-                print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
+            if print_step > 0:
+                if i % print_step == 0:
+                    loss_g = sess.run(cost, feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))})
+                    if(self.verbose):
+                        print('epoch {0}: global loss = {1}'.format(i, loss_g))
+            if(self.inputX_val is not None and validation_step > 0):
+                if(i % validation_step == 0):
+                    # note: C-matrix values are entry-specific, thus can't run the validation set through the middle layer
+                    H_M_2 = sess.run(self.H_M_2, feed_dict={self.X: self.inputX_val})
+                    j1, j3, j4 = sess.run([self.J1, self.J3, self.J4], feed_dict={self.H_M_2_post: H_M_2, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX))})
+                    loss_v = j1 + j3 + j4
+                    if(self.verbose):
+                        print('epoch {0}: validation loss = {1}'.format(i, loss_v))
+                    if(loss_v < loss_v_best):
+                        loss_v_best = loss_v
+                    if(stop_criteria > 0):
+                        if(loss_v > loss_v_prev):
+                            consec_increases += 1
+                            if(consec_increases >= stop_criteria):
+                                print("Training stopped after {0} epochs with loss = {1}".format(i, loss_v_best))
+                                break
+                        else:
+                            consec_increases = 0
+                        loss_v_prev = loss_v
+        if(stop_criteria <= 0 or consec_increases < stop_criteria):
+            print("Training exceeded max limit of {0} epochs".format(i+1))
 
         # for i in range(1, epochs+1):
         #     x_batch, c_batch = get_batch_XC(self.inputX, self.inputC, batch_num)  
