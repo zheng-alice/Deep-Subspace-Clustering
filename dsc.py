@@ -51,7 +51,7 @@ class DeepSubspaceClustering:
         self.givenC = not C is None
         self.trainC = trainC
         if self.givenC:
-            self.inputC = C
+            self.inputC = np.float32(C)
         else:
             self.inputC = np.random.normal(0.0, np.sqrt(1.0 / self.inputX.shape[0]), (self.inputX.shape[0], self.inputX.shape[0]))
             self.inputC -= np.diag(np.diag(self.inputC))
@@ -99,6 +99,9 @@ class DeepSubspaceClustering:
         if(self.trainC):
             input_hidden = tf.matmul(C_batch, input_hidden)
             self.H_M_2_post = input_hidden
+        elif(self.givenC):
+            input_hidden = tf.gather(input_hidden, self.C_indxs)
+            self.H_M_2_post = input_hidden
         for init_w, init_b in zip(weights[len(weights)//2:], biases[len(weights)//2:]):
             self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
             input_hidden = self.hidden_layers[-1].output
@@ -123,8 +126,8 @@ class DeepSubspaceClustering:
             self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.gather(self.H_M_2, self.C_indxs), self.H_M_2_post)))
             self.J4 = tf.reduce_mean(tf.square(C_batch))
         elif self.givenC:
-            self.J2 = tf.reduce_mean(tf.square(tf.subtract(tf.transpose(self.H_M_2), \
-                                        tf.matmul(tf.transpose(self.H_M_2), C_batch))))
+            self.J2 = tf.reduce_mean(tf.square(tf.subtract(self.H_M_2_post, \
+                                        tf.gather(tf.matmul(tf.transpose(self.inputC), self.H_M_2), self.C_indxs))))
 
         self.global_step = tf.Variable(1, dtype=tf.float32, trainable=False)
 
@@ -168,7 +171,7 @@ class DeepSubspaceClustering:
             batch = self._get_batches(len(self.inputX), batch_num=batch_num)
             for indx in batch:
                 x_batch = self.inputX[indx]
-                out=sess.run(self.optimizer, feed_dict={self.X: self.inputX if self.trainC else x_batch, self.X2: x_batch, self.C_indxs: indx})
+                out=sess.run(self.optimizer, feed_dict={self.X: self.inputX if self.trainC or self.givenC else x_batch, self.X2: x_batch, self.C_indxs: indx})
             if print_step > 0:
                 if i % print_step == 0:
                     loss_g = sess.run(cost, feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))})
@@ -177,9 +180,13 @@ class DeepSubspaceClustering:
             if(self.inputX_val is not None and validation_step > 0):
                 if(i % validation_step == 0):
                     # note: C-matrix values are entry-specific, thus can't run the validation set through the middle layer
-                    H_M_2 = sess.run(self.H_M_2, feed_dict={self.X: self.inputX_val})
-                    j1, j3, j4 = sess.run([self.J1, self.J3, self.J4], feed_dict={self.H_M_2_post: H_M_2, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX))})
-                    loss_v = j1 + j3 + j4
+                    if(self.trainC):
+                        H_M_2 = sess.run(self.H_M_2, feed_dict={self.X: self.inputX_val})
+                        j1, j3, j4 = sess.run([self.J1, self.J3, self.J4], feed_dict={self.H_M_2_post: H_M_2, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX))})
+                    else:
+                        j1, j3 = sess.run([self.J1, self.J3], feed_dict={self.X: self.inputX_val, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX_val))})
+                        j4 = 0
+                    loss_v = j1 + lambda2*j3 + lambda3*j4
                     if(self.verbose):
                         print('epoch {0}: validation loss = {1}'.format(i, loss_v))
                     if(loss_v < loss_v_best):
