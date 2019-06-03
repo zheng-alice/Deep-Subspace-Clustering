@@ -98,10 +98,9 @@ class DeepSubspaceClustering:
         #self-expressive layer
         if(self.trainC):
             input_hidden = tf.matmul(C_batch, input_hidden)
-            self.H_M_2_post = input_hidden
         elif(self.givenC):
             input_hidden = tf.gather(input_hidden, self.C_indxs)
-            self.H_M_2_post = input_hidden
+        self.H_M_2_post = input_hidden
         for init_w, init_b in zip(weights[len(weights)//2:], biases[len(weights)//2:]):
             self.hidden_layers.append(DenseLayer(input_hidden, init_w, init_b, activation=activation))
             input_hidden = self.hidden_layers[-1].output
@@ -167,6 +166,10 @@ class DeepSubspaceClustering:
         loss_v_prev = float("inf")
         loss_v_best = float("inf")
         consec_increases = 0
+        autoenc = [{'weights': layer.w, 'biases': layer.b} for layer in self.hidden_layers]
+        encode = autoenc[:len(autoenc)//2]
+        decode = autoenc[len(autoenc)//2:]
+        enc_best = dec_best = c_best = None
         for i in range(epochs):
             batch = self._get_batches(len(self.inputX), batch_num=batch_num)
             for indx in batch:
@@ -181,16 +184,20 @@ class DeepSubspaceClustering:
                 if(i % validation_step == 0):
                     # note: C-matrix values are entry-specific, thus can't run the validation set through the middle layer
                     if(self.trainC):
-                        H_M_2 = sess.run(self.H_M_2, feed_dict={self.X: self.inputX_val})
-                        j1, j3, j4 = sess.run([self.J1, self.J3, self.J4], feed_dict={self.H_M_2_post: H_M_2, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX))})
+                        H_M_2, enc = sess.run([self.H_M_2, encode], feed_dict={self.X: self.inputX_val})
+                        j1, j3, j4, dec, c = sess.run([self.J1, self.J3, self.J4, decode, self.C], feed_dict={self.H_M_2_post: H_M_2, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX))})
                     else:
-                        j1, j3 = sess.run([self.J1, self.J3], feed_dict={self.X: self.inputX_val, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX_val))})
+                        j1, j3, enc, dec = sess.run([self.J1, self.J3, encode, decode], feed_dict={self.X: self.inputX_val, self.X2: self.inputX_val, self.C_indxs: range(len(self.inputX_val))})
                         j4 = 0
+                        c = None
                     loss_v = j1 + lambda2*j3 + lambda3*j4
                     if(self.verbose):
                         print('epoch {0}: validation loss = {1}'.format(i, loss_v))
                     if(loss_v < loss_v_best):
                         loss_v_best = loss_v
+                        enc_best = enc
+                        dec_best = dec
+                        c_best = c
                     if(stop_criteria > 0):
                         if(loss_v > loss_v_prev):
                             consec_increases += 1
@@ -209,6 +216,18 @@ class DeepSubspaceClustering:
         #     if i % print_step == 0:
         #         print('epoch {0}: global loss = {1}'.format(i, self.losses[-1]))
 
+        if enc_best is None:
+            enc_best, dec_best = sess.run([encode, decode])
+            if(c_best is None):
+                c_best = sess.run(self.C)
+        # replace current weights with best
+        for i in range(len(encode)):
+            sess.run([tf.assign(encode[i]['weights'], tf.convert_to_tensor(enc_best[i]['weights'], dtype=tf.float32)),
+                      tf.assign(encode[i]['biases'], tf.convert_to_tensor(enc_best[i]['biases'], dtype=tf.float32)),
+                      tf.assign(decode[i]['weights'], tf.convert_to_tensor(dec_best[i]['weights'], dtype=tf.float32)),
+                      tf.assign(decode[i]['biases'], tf.convert_to_tensor(dec_best[i]['biases'], dtype=tf.float32))])
+        if(self.trainC):
+            sess.run(tf.assign(self.C, tf.convert_to_tensor(c_best, dtype=tf.float32)))
         self.result, self.reconstr, self.outC = sess.run([self.H_M_2, self.H_M, self.C], feed_dict={self.X: self.inputX, self.X2: self.inputX, self.C_indxs: range(len(self.inputX))})
         return sess
 
