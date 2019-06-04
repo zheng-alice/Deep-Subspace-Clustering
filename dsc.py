@@ -22,6 +22,8 @@ class DeepSubspaceClustering:
                                      'validation_step': 10,
                                      'stop_criteria': 3},
                  lr=0.001, batch_num=1, seed=None, verbose=True):
+        # lr and batch_num are pretraining parameters
+        # listed separately b/c need to be reached by optimization
         tf.reset_default_graph()
         tf.set_random_seed(seed)
         np.random.seed(seed)
@@ -78,7 +80,8 @@ class DeepSubspaceClustering:
             if(save_path is not None):
                 save_path = save_path.format(self.pre_loss)
                 np.savez(save_path, *weights, *biases)
-                print("\nModel saved to " + save_path + '.npz')
+                if(self.verbose):
+                    print("\nModel saved to " + save_path + '.npz')
         else:
             load_path += '.npz'
             npzfile = np.load(load_path)
@@ -86,7 +89,8 @@ class DeepSubspaceClustering:
             npzfile.close()
             weights = ndarrays[:len(ndarrays)//2]
             biases = ndarrays[len(ndarrays)//2:]
-            print("\nModel loaded from " + load_path)
+            if(self.verbose):
+                print("\nModel loaded from " + load_path)
 
         # J3 regularization term
         J3_list = []
@@ -202,13 +206,15 @@ class DeepSubspaceClustering:
                         if(loss_v > loss_v_prev):
                             consec_increases += 1
                             if(consec_increases >= stop_criteria):
-                                print("Training stopped after {0} epochs with loss = {1}".format(i, loss_v_best))
+                                if(self.verbose):
+                                    print("Training stopped after {0} epochs with loss = {1}".format(i, loss_v_best))
                                 break
                         else:
                             consec_increases = 0
                         loss_v_prev = loss_v
         if(stop_criteria <= 0 or consec_increases < stop_criteria):
-            print("Training exceeded max limit of {0} epochs".format(i+1))
+            if(self.verbose):
+                print("Training exceeded max limit of {0} epochs".format(i+1))
 
         # for i in range(1, epochs+1):
         #     x_batch, c_batch = get_batch_XC(self.inputX, self.inputC, batch_num)  
