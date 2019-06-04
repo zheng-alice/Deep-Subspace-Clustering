@@ -88,14 +88,16 @@ octave:3> kmeans(randn(10, 2), 2)
 
 ### Packages
 Through ```pip``` or ```conda``` (some require ```-c conda-forge```), install the following:
+* scikit-image
 * scikit-learn
 * scikit-optimize
 * munkres
 * scipy
 * matplotlib
-* pympler
-* pathlib
 * mnist
+* pathlib
+* pillow
+* pympler
 
 ### SSC using ADMM
 Download code for [SSC using ADMM](http://vision.jhu.edu/code/). Unzip the contents into ```SSC_ADMM_v1.1```, located at the root of the repository.
