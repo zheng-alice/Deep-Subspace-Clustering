@@ -115,3 +115,31 @@ def split(data, fraction):
     mask = np.zeros(data.shape[0], dtype=bool)
     mask[include_idx] = True
     return data[mask], data[~mask]
+
+def split_mult(data_arr, fraction):
+    """ Splits multiple data arrays in tandem.
+    
+        PARAMETERS
+        ---
+        data [list of ndarray]:
+            Data arrays to split.
+        
+        fraction [double]:
+            Number in range [0, 1]. Corresponds to the amount of data in output arrays As.
+        
+        RETURNS
+        ---
+        As [list of ndarray]:
+            Same order as given.
+            Each contains N*fraction points.
+        
+        Bs [list ofndarray]:
+            Each contains N*(1-fraction) points.
+        
+    """
+    assert 0 <= fraction <= 1, "Fraction must be between 0 and 1"
+    N = data_arr[0].shape[0]
+    include_idx = np.random.choice(N, round(N*fraction), replace=False)
+    mask = np.zeros(N, dtype=bool)
+    mask[include_idx] = True
+    return [data[mask] for data in data_arr], [data[~mask] for data in data_arr]

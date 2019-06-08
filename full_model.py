@@ -52,8 +52,9 @@ else:
 #from scipy.io import savemat
 #savemat('./saved/raw/yaleB.mat', mdict={'X':images, 'Y':labels})
 #images_norm = flatten(rescale(images))
-#images_norm_val, images_norm = split(images_norm, 0.2) # only do this once
-#labels_val, labels = split(labels, 0.2)                # if loading pre-trained models, load the partitioned 'rescaled' data
+#training, validation = split_mult([images_norm, labels], 0.2)  # only do this once
+#images_norm, labels = training                                 # if loading pre-trained models,
+#images_norm_val, labels_val = validation                       # load the partitioned 'rescaled' data
 #savemat('./saved/rescaled/yaleB.mat', mdict={'X':images_norm, 'Y':labels, 'X_val':images_norm_val, 'Y_val':labels_val})
 
 #from scipy.io import loadmat
