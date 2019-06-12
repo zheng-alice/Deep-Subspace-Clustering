@@ -68,7 +68,7 @@ def res_plot(result):
     if(show_plot):
         return plot_convergence(result, yscale='log')
 
-def res_optimum(result):
+def res_optimum(result, n_points=1000000):
     """ Extract the overall optimum from an optimization's surrogate model.
 
         PARAMETERS
@@ -84,13 +84,13 @@ def res_optimum(result):
         y_opt [double]:
             The corresponding predicted value.
     """
-    X = result.space.rvs(result.specs['args']['n_points'], random_state=0)
+    X = result.space.rvs(n_points, random_state=0)
     Y = result.models[-1].predict(result.space.transform(X))
 
     min_idx = np.argmin(Y)
     return X[min_idx], Y[min_idx]
 
-def res_optimum_mult(results):
+def res_optimum_mult(results, n_points=1000000):
     """ Predict an overall optimum from a combination of
         several optimization's surrogate models.
 
@@ -107,7 +107,7 @@ def res_optimum_mult(results):
         y_opt [double]:
             The geometric mean corresponding predicted value.
     """
-    X = results[0].space.rvs(results[0].specs['args']['n_points'], random_state=0)
+    X = results[0].space.rvs(n_points, random_state=0)
     Y_total = [1.0]*len(X)
     for result in results:
         Y_total *= result.models[-1].predict(result.space.transform(X))
